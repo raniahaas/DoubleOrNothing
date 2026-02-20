@@ -1,58 +1,49 @@
-# Getting Started with Coding
+# TwoStageAvionicsBay
+University of Cincinnati's Rocketry Club Spring 2026 Project, nicknamed Double or Nothing. This is in succession to the previous semester's Boosted Dart, [Harty Darty](https://github.com/raniamaaraba/HardyDarty), for the club's overall goal of building skills for a space shot within the next decade. The project is a semester long project beginning January 2nd until April 12th, 2026. Repo is a current WIP, last edit: February 20th, 2026.
 
-### Software
-We will be primarly using [Visual Studio Code]([url](https://code.visualstudio.com/)) (VSC) and [GitHub]([url](https://desktop.github.com/download/)).
+# Goals
+| Team  | Achievement Desired |
+| ------------- | ------------- |
+| Overall  | Have an apogee greater than 8,000 ft  |
+| Overall  | Safely recover both parts of the rocket within a mile radius of launch  |
+| Structures | Learn how to use Open Rocket to optimise a two-stage rocket efficiently |
+| Structures | Learn how to build a Mach-1 capabile rocket|
+| Structures | Refine construction methods while enhancing simulation techniques|
+| Avionics | Learn how and when to ignite a second stage |
+| Avionics | Learn how to recover both stages |
+| Avionics | Work on integration of PCBs for further development |
 
-## Setting Up VSC
-There are a few primary extensions you will want to add if you are working in C++ for the first time in VSC. Noteably, the C/C++ language from Microsoft
-<img width="306" height="156" alt="Screenshot 2026-02-05 at 13 36 02" src="https://github.com/user-attachments/assets/ac8fb331-dd2a-4d85-a1d5-6f9d2b8c93f9" />
-Also, look to install the serial monitor for later. 
-<img width="1155" height="666" alt="Screenshot 2026-02-11 at 19 11 49" src="https://github.com/user-attachments/assets/1169bb0e-64f3-4185-a0fc-edc1f656ad70" />
-You can also additionally add the Extension Pack and other similar C++ Intellisense options but it is not required. _If you have previously worked with C++ in your VSC enviornment please make sure to disable Clang when working on the Avionics code!_ There are a few issues with Clang and Platformio
-<img width="728" height="692" alt="Screenshot 2026-02-05 at 13 38 08" src="https://github.com/user-attachments/assets/cb8a48ff-a3b7-4e95-afb8-6f3efbaa37da" />
-Turning off or on an extension can simply be executed by the Enable/Disable button.
-If you would like to test if your device is running C++ properly, try running this code
-```
-#include <iostream>
-int main () {
-    std::cout<<"Hello World!\n" << std::endl;
-    return 0;
-}
-```
-<img width="729" height="202" alt="Screenshot 2026-02-05 at 13 43 13" src="https://github.com/user-attachments/assets/c266bf5f-e821-45b6-ad46-de7b39c0ee83" />
-You should see in your terminal the Hello World statement. **_If you cannot get this to work please reach out to me!_**
 
-### Avionics Development
-Instead of using ArudinoIDE, this is where PlatformIO comes in.
-<img width="715" height="687" alt="Screenshot 2026-02-05 at 13 47 01" src="https://github.com/user-attachments/assets/0ca90dd2-7f98-4e6a-99e3-917f79464dce" />
-This should be the extension that you are looking for, sometimes you may see on the left-hand side of your screen the little bug that is their mascot to quickly access the features of platformio. It is okay if this doesn't show up, as long as it is installed (which you can tell if it says untilstall and disable) then you are good to go.
+# Initial Structures Design
+Initially simulated in Open Rocket, Double or Nothing is primarily composed of G10 Fiberglass, except for the 2nd stage motor mount and the transition. The first stage will run an I-435, the second an H-130, with the whole rocket weighing approximately 6.9 pounds. Similarly, stage separation will also occur due to drag. The Transition stage will be a 3D-printed PETG part to continue seeking more advanced technologies required for further development. 
 
-You should then be taken to the Home page of PlatformIO, this is where we can make the compatibilty with the hardware and VSC.
-<img width="1031" height="725" alt="Screenshot 2026-02-05 at 13 48 57" src="https://github.com/user-attachments/assets/85175073-22d2-4716-a6b4-ddbf0b48019c" />
-You can add a new project yourself if you would like to try and create other projects on your own or if you want to start from scratch, but for now we will come back to this so we can link our Avionics code.
+### 3D Simulated Design
+<img width="181" height="386" alt="Screenshot 2026-02-19 at 18 23 49" src="https://github.com/user-attachments/assets/b4009730-5a83-4050-ad7b-4b7491ee532a" />
+<img width="911" height="226" alt="Screenshot 2026-02-19 at 18 26 58" src="https://github.com/user-attachments/assets/d1148d67-15af-4dcd-a62b-391ea14f02c0" />
 
-## GitHub
-For many of you, GitHub is relativley new, just as a quick overall we are using GitHub like Loring said as more of a version control and it is a faster and more consise way to manage multiple versions and share data. There are three primary forms, Github.com (the website where you created your account), Git (the physical commands that mangage GitHub repositories) and GitHub Desktop (which is a UI user-friendly version of Git). We will be primarily working in the desktop app since Git can be more finkey and knowledge intensive. 
+# Avionics
+Similar to HD, there is both a custom avionics bay and off-the-shelf components. Currently, we are using three off-the-shelf components across the two stages, with the customs in the 2nd stage. One of the bigger notes for avionics development as well is that the custom electronics **_are not_** connected to the pyrotechnic charges. Due to the timeline and in-experience overall of members programming with custom electronics for flight control, this is someone we chose to bypass this semester. As an overall, the customs will be simulating with charges during events (such as apogee, parachute deployments and such) to log this data and our accuracy against the off-the-shelf components. 
 
-### GitHub and VSC
-First things first, we actually need some code to work with. Open up your VSC and on the welcome screen you can press Ctrl + P (or command). type in '>git' and you should see an option for 'Git: Clone'
-<img width="1078" height="576" alt="Screenshot 2026-02-05 at 13 55 40" src="https://github.com/user-attachments/assets/33fcbdf6-8cf9-4405-94f5-5eca2d5cc8bd" />
-This should then prompt you to link your GitHub to your VSC and open up a browser tab. This is essential since otherwise you will not be able to make any new changes to the code. 
-<img width="1510" height="754" alt="Screenshot 2026-02-05 at 13 59 07" src="https://github.com/user-attachments/assets/d056a2b6-2261-4b5b-83ea-e56a1a411343" />
-For example, I am just using a Repo that I needed for Harty Darty last semester, but **UNDER THE CODE BRANCH**__ click **Code** and copy the URL link **_DO NOT just copy the URL at the top of your screen!_** You can then take the link and paste it into your bar at the top and click on it to clone the repository. 
-<img width="539" height="381" alt="Screenshot 2026-02-05 at 14 00 23" src="https://github.com/user-attachments/assets/adec889c-0403-45dc-97f8-d802f8582468" />
-You should then be prompted to choose a location on your computer to put the cloned files. Make sure you keep your code in a spot you can easily access. You can then open the repository and see all of the same elements that are the in the same repo! This is super useful for later too if you find any online repositories and want to try out their code on our hardware, just a lot faster than using Ctrl C Ctrl V for multiple files.
+| Off-the-Shelf Components  | Location | Use |
+| ------------- | ------------- | ------------- |
+| Blue Jay  | 1st stage  | An additional flight computer to use as a comparison alongside our custom avionics-- deploys the 1st stage parachute |
+| Blue Raven  | 2nd stage  | Also an additional flight computer, but for data in the second stage |
+| EasyMini Altimeter | 2nd stage | Dual redundant recovery system |
+| Grey Designs V1 GPS Tracker | 1st and 2nd| Real-time GPS data via data link |
+|
 
-### GitHub Desktop
-Going back to Github Desktop, ensure that you are signed in--if you are you should be able to add a new repository. If this is your first time using the desktop app, it may look a little different. 
-<img width="978" height="665" alt="Screenshot 2026-02-05 at 14 03 17" src="https://github.com/user-attachments/assets/3411ee80-5c90-402d-92fd-bbf0158f0830" />
-You should be able to add the exisitng repo (this repo so TwoStageAvionicsBay) and link up to this repository! If you have any issues with this part feel free to reach out. Otherwise, you may see now in your VSC the added Git section of the Timeline as such; you'll also notice it says your current Repo at the bottom as well
-<img width="1072" height="783" alt="Screenshot 2026-02-05 at 14 08 24" src="https://github.com/user-attachments/assets/3c4c40fe-119b-4409-ad29-9030cd596df9" />
+| Custom Avionics | Use |
+| ------------- | ------------- |
+| ESP32-S3 Microcontroller | Our data-logging device of choice; re-using from HD since we have legacy code and a baseline for non-coders | MS5611 Barometer | Easy C++ integration with library as well as accurate up to 20,000 feet in altitude |
+| LSM6DSO32 IMU | Has high range accelerometer data and sampling rates, particularly useful for our current purpose as it is accurate at high and low Gs |
+| SOT23-3 MOSTFET and 2.4GHz flex PCB WiFi Antenna | small additions; possibly considerations for modifying either based on further testing and development |
 
-### PlatformIO
-I will do a quick rundown, but for now I won't go too far into technicalities. If you cloned the repo properly and have PlatformIO installed you will see either the little bug or at the bottom of your screen a House icon to take you to the home page.
-<img width="1078" height="192" alt="Screenshot 2026-02-05 at 14 09 26" src="https://github.com/user-attachments/assets/e5c5f312-cbc0-45be-a4aa-8b81b76b18ca" />
-If you click on this, it should take you to that home page we were talking about earlier
-<img width="1071" height="783" alt="Screenshot 2026-02-05 at 14 10 20" src="https://github.com/user-attachments/assets/92098429-ce25-4bbd-94e0-0de82c4fb953" />
-If you open project, note your path may be a little different or hard to find at first but you should be opening the 'StageTwo' File folder, you can note if it is the correct one if you see a folder inside of it called 'src'. This is where the PlatformIO.ini file is which basically tells VSC and PlatformIO what kind of hardware we are going to be coding on. Additionally, you should see a check mark and right arrow which we will use when we are checking if code is ready to flash. For now, that is it! Note you will have to do this PlatformIO setup each time you are opening the file for the first time so keep this handy as well as your path!
+## Initial PCB Design
+Not our current finalised version, but an early implementation. The overall goal for the PCB is not only to set us up for further usage down the road, but also to help keep the custom avionics clean and efficient. To keep the system together and connections close, we opted for a double sided board mainly with the ESP, capacitors, resistors, and IMU on top with the rest of the smaller components like the MOSFETs, barometer, and battery/scew terminals on the bottom. To allow wires to pass through, there are wholes according on each side of the board. 
+<img width="300" height="208" alt="Top of the PCB Design" src="https://github.com/user-attachments/assets/ce6188b7-2aad-43b8-a97d-c942e26d96ab" />
+<img width="261" height="213" alt="Bottom of the PCB Design" src="https://github.com/user-attachments/assets/9d0705ae-6fd4-4734-bfe6-b5faf558d963" />
+ <img width="976" height="587" alt="Overall schematics for the devices in the PCB" src="https://github.com/user-attachments/assets/e920335f-56cd-445d-aeec-7d39c1d388cb" />
+
+
+
 
