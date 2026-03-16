@@ -110,48 +110,91 @@ void continuity_test(int mode, int ig[3], int cont[3]){
     float Vout3 = ADC3* (3.3/4095.0);
     float Vigniter3 = Vout3*2;
 
-    if(Serial){
-        if (mode==0){
-            if (Vigniter1 >= 3.2) {
-                Serial.print("Continuity 1 Good: ");
-            }
-            if (Vigniter1 >= 3.6) {
-                Serial.print("Good Voltage 1: ");
-            } else {
-                Serial.print("Low Battery 1: ");
-            }
-            Serial.print(Vigniter1); Serial.print(" ");
-
-            if (Vigniter2 >= 3.2) {
-                Serial.print("Continuity 2 Good: ");
-            }
-            if (Vigniter2 >= 3.6) {
-                Serial.print("Good Voltage 2: ");
-            } else {
-                Serial.print("Low Battery 2: ");
-            }
-            Serial.print(Vigniter2); Serial.print(" ");
-
-            if (Vigniter3 >= 3.2) {
-                Serial.print("Continuity 3 Good: ");
-            }
-            if (Vigniter3 >= 3.6) {
-                Serial.print("Good Voltage 3: ");
-            } else {
-                Serial.print("Low Battery 3: ");
-            }
-            Serial.println(Vigniter3);
-            delay(1000);
-        } else{
-        // Sequential Blink Mode: Turns each LED on and off in sequence
-        // DO NOT USE WITH ANY LIVE IGNITERS, WILL IGNITE AS SOON AS PROGRAM IS FLASHED!
-            for (int i=0; i<3; i++) {
-                delay(1000);
-                digitalWrite(ig[i],HIGH);
-                delay(1000);
-                digitalWrite(ig[i],LOW);
-            }
+    if (mode==0){
+        // Voltage/Continuity Read Mode: Reads continuity and displays voltage from each pyro port, offers indicators for battery status based on voltage
+        // READ BELOW WARNINGS BEFORE USING WITH IGNITERS INSTALLED!! IMPOPER USE CAN LEAD TO INJURY, YOU WON'T ENJOY HAVING LESS FINGERS!
+        // OK TO USE WITH IGNITERS, BUT ENSURE THAT IGNITERS ARE IN A SAFE LOCATION AWAY FROM PEOPLE BEFORE PLUGGIN IN FLIGHT COMPUTER!
+        // DO NOT INSTALL IGNITERS WITH POWER SUPPLIED TO COMPUTER! THIS CAN LEAD TO UNINTENTIONAL EARLY IGNITION AND SERIOUS BODILY HARM
+        if (Vigniter1 >= 3.2) {
+            Serial.print("Continuity 1 Good: ");
         }
+        if (Vigniter1 >= 3.6) {
+            Serial.print("Good Voltage 1: ");
+        } else {
+            Serial.print("Low Battery 1: ");
+        }
+        Serial.print(Vigniter1); Serial.print(" ");
+
+        if (Vigniter2 >= 3.2) {
+            Serial.print("Continuity 2 Good: ");
+        }
+        if (Vigniter2 >= 3.6) {
+            Serial.print("Good Voltage 2: ");
+        } else {
+            Serial.print("Low Battery 2: ");
+        }
+        Serial.print(Vigniter2); Serial.print(" ");
+
+        if (Vigniter3 >= 3.2) {
+            Serial.print("Continuity 3 Good: ");
+        }
+        if (Vigniter3 >= 3.6) {
+            Serial.print("Good Voltage 3: ");
+        } else {
+            Serial.print("Low Battery 3: ");
+        }
+        Serial.println(Vigniter3);
+        delay(1000);
+    } else if (mode==1){
+        // Port Indicator Mode: Indicates what port is active by blinking all LEDs to indicate port number before illuminating the given port LED to show it's location
+        // NOTE: Intended for use when testing with LEDs, will not function with fuses 
+        // DO NOT USE WITH ANY LIVE IGNITERS, WILL IGNITE AS SOON AS PROGRAM IS FLASHED!
+        for (int i=0; i<3; i++) {
+            delay(1000);
+            for (int k=0; k<i+1; k++) { // Blink indicator, blinks to indicate the ignition port (1 blink for ignition 1, 2 blinks for ignition 2, etc.)
+                digitalWrite(ig[0],HIGH);
+                digitalWrite(ig[1],HIGH);
+                digitalWrite(ig[2],HIGH);
+                delay(500); 
+
+                // Turns all the channels off
+                digitalWrite(ig[0],LOW);
+                digitalWrite(ig[1],LOW);
+                digitalWrite(ig[2],LOW);
+                delay(500);
+            }
+
+            // Turns all the channels off
+            digitalWrite(ig[0],LOW);
+            digitalWrite(ig[1],LOW);
+            digitalWrite(ig[2],LOW);
+            delay(500); // Delay to space out blinks from port indication
+
+            // Print current port to serial
+            Serial.print("Current Port: ");
+            Serial.println(i+1);
+
+            // Turn on and off given ignition port
+            digitalWrite(ig[i],HIGH);
+            delay(2000);
+            digitalWrite(ig[i],LOW);
+        }
+    } else{
+    // Sequential Blink Mode: Turns each LED on and off in sequence
+    // DO NOT USE WITH ANY LIVE IGNITERS, WILL IGNITE AS SOON AS PROGRAM IS FLASHED!
+        for (int i=0; i<3; i++) {
+            delay(1000);
+
+            // Indicates what port is being blinked
+            Serial.print("Port: ");
+            Serial.println(i+1);
+
+            digitalWrite(ig[i],HIGH);
+            delay(1000);
+            digitalWrite(ig[i],LOW);
+        }
+        // Indicates when loop completes
+        Serial.println("Loop Complete");
     }
 }
 
