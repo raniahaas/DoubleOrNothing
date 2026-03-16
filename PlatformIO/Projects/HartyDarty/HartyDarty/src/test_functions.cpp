@@ -92,9 +92,12 @@ void data_print_test(Adafruit_LSM6DSO32& IMU, MS5611& BARO,int plot=1){ // & aft
 
 // Function for varied continuity testing, NOT final function for reading continuity during flight
 // Original code by Jessie, changes and conversion to function by Loring T
-// Input descriptions:
 // NOTE: Pass GPIO pins as integer array, for example declare ig[3]={ig1,ig2,ig3}, where ig1-ig3 are GPIO pins for igniters, and pass just ig (the array) to function
-// mode: integer that determines how the test behaves - not currently implimented 
+// Input descriptions:
+// mode: Integer that determines how the test behaves - not currently implimented 
+//  mode=0: Voltage/Continuity Read Mode - See in-code notes below
+//  mode=1: Port Indicator (blink) Mode - See in-code notes below
+//  mode=else: Sequential Blink Mode - See in-code notes below
 // ig: integer array that stores GPIO pins for igniters 
 // cont: integer array that stores GPIO pins for continuity test (analog) lines
 void continuity_test(int mode, int ig[3], int cont[3]){
@@ -199,6 +202,10 @@ void continuity_test(int mode, int ig[3], int cont[3]){
 }
 
 // Sensor initialization - Inteded to be placed in setup loop
+// Notes: Starts up sensors, also defines the IMU range and rate (Hz), which is currently not defined in the main loop
+// Input Descriptions:
+// IMU: Sensor specific class variable for the IMU, set in the pre-setup loop code (ex. Adafruit_LSM6DSO32 dso32;) where dso32 would be passed as IMU
+// BARO: Sensor specific class variable for the barometer, set in the pre-setup loop code (ex. MS5611 MS5611(0x77);) where MS5611 would be passes as BARO
 void sensor_init(Adafruit_LSM6DSO32& IMU, MS5611& BARO){
     // IMU Bootup & Test ------------------------
     Serial.println("Adafruit LSM6DSO32 test!");

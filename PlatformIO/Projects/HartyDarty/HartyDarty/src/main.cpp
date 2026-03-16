@@ -3,6 +3,7 @@ Documentation block
 03/04/26 - RH - Modified HTML code to look better
 03/12/26 - RH - Cleaned up comments and created separate file for File mangement/logging
 03/13/26 - LT - Forked from "Code" branch to create this simplified branch for easy testing of functions
+03/15/26 - LT - Updated the continuity_test function to add a port indicator mode, commented out sensor calls and un-commented continuity test calls
 
 
 
@@ -18,7 +19,7 @@ Documentation block
 // Init IMU
 Adafruit_LSM6DSO32 dso32;
 
-// Set I2C adress for barometer - Ignore any error here relating to "not a class name"
+// Set I2C adress for barometer - Ignore any error here relating to "not a class name" or "not a name type"
 MS5611 MS5611(0x77);
 sensors_event_t accel;
 sensors_event_t gyro;
@@ -38,11 +39,11 @@ void setup(void) {
   Serial.begin(115200);
   delay(100); // will pause Zero, Leonardo, etc until serial console opens
 
-  // All sensor initializations offloaded to 
+  // All sensor initializations offloaded to below function
   //sensor_init(dso32,MS5611); // Commented out for testing w/ initial PCB that doesn't have sensors
 
-  //Setup PinModes for continuity testing
-  //Setting low for continuity testing
+  // Setup PinModes for continuity testing
+  // Setting pins low for continuity testing, setting high opens MOSFETs
 
   // Mostfet 1
   // Note: Set to Apogee on PCB
@@ -64,6 +65,7 @@ void setup(void) {
   pinMode(cont3,INPUT);
   digitalWrite(ig3,LOW); // Sets mosfet, LOW means off, HIGH means on
 
+  // Define the built-in LED as an output that we can control
   pinMode(LED_BUILTIN, OUTPUT);
   //Serial.begin(115200);
   Serial.println();
