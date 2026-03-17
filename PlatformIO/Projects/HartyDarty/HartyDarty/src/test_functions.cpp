@@ -354,13 +354,13 @@ void barometer_test(MS5611& BARO, int mode=0) {
         float baro = BARO.getPressure();
         float alt = BARO.getAltitudeFeet();
 
-
+        // Print the gathered barometer data to the serial port
         Serial.print("Temp (C): ");
         Serial.print(temp);
         Serial.print("\tPressure (mbar): ");
         Serial.print(baro);
         Serial.print("\tAltitude (ft): ");
         Serial.println(alt);
-        delay(100);
+        delay(100); // Delay to keep data feed somewhat readable in the serial monitor (10Hz)
     }
 }
