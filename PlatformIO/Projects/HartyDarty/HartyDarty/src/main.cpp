@@ -4,7 +4,7 @@ Documentation block
 03/12/26 - RH - Cleaned up comments and created separate file for File mangement/logging
 03/13/26 - LT - Forked from "Code" branch to create this simplified branch for easy testing of functions
 03/15/26 - LT - Updated the continuity_test function to add a port indicator mode, commented out sensor calls and un-commented continuity test calls
-
+03/16/26 - LT - Re-added standalone barometer read function to test I2C functionality with PCB, created a function to exclusively read the barometer and not the IMU for this testing
 
 
 
@@ -71,6 +71,18 @@ void setup(void) {
   Serial.println();
 
   digitalWrite(LED_BUILTIN,LOW); // Turns built-in LED off after startup 
+
+  // ** Starup barometer for I2C testing
+  Wire.begin();
+  if (MS5611.begin() == true){
+      Serial.println("MS5611 found.");
+  } else{
+      Serial.println("MS5611 not found. halt.");
+      while (1);
+  }
+  Serial.println();
+  MS5611.setOversampling(OSR_STANDARD);
+  // ** Remove all code between asterisks once initial I2C function testing complete!
 }
 
 void loop() {
@@ -81,7 +93,11 @@ void loop() {
   // Turn the GPIO ports for ignition and continuity into integer arrays for input to function
   int ig[3]={ig1,ig2,ig3};
   int cont[3]={cont1,cont2,cont3};
-  continuity_test(2,ig,cont); // Commented out for ease of testing
+  //continuity_test(2,ig,cont); // Commented out for ease of testing
+
+  // Quick and dirty barometer reading code for I2C testing (moved to seperate function) **
+  barometer_test(MS5611,0);
+  // ** Remove all code between asterisks once initial I2C function testing complete!
 
   // NOTE: Below code may be redundant, commented out for now but delete if confirmed redundant with testing 
 /*   float zG = accel.acceleration.z;

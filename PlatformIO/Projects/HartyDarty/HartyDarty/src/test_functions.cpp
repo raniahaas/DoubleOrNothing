@@ -344,3 +344,23 @@ void sensor_init(Adafruit_LSM6DSO32& IMU, MS5611& BARO){
 
     BARO.setOversampling(OSR_STANDARD);
 }
+
+// Barometer Test - Function to test the barometer by itself, should be called in main loop
+void barometer_test(MS5611& BARO, int mode=0) {
+    if (mode==0) {
+        // Get baro data and save to variables
+        BARO.read(); // Gets actual data from barometer. If this line not present, all other BARO.XYZ calls will return -9.99
+        float temp = BARO.getTemperature(); // To get usable data from barometer to variables use these BARO. calls
+        float baro = BARO.getPressure();
+        float alt = BARO.getAltitudeFeet();
+
+
+        Serial.print("Temp (C): ");
+        Serial.print(temp);
+        Serial.print("\tPressure (mbar): ");
+        Serial.print(baro);
+        Serial.print("\tAltitude (ft): ");
+        Serial.println(alt);
+        delay(100);
+    }
+}
