@@ -346,6 +346,7 @@ void sensor_init(Adafruit_LSM6DSO32& IMU, MS5611& BARO){
 }
 
 // Barometer Test - Function to test the barometer by itself, should be called in main loop
+// Note: This function is meant to be temporary and easily modified, thus it is documented slightly less than normal, sorry! - LT
 void barometer_test(MS5611& BARO, int mode=0) {
     if (mode==0) {
         // Get baro data and save to variables
