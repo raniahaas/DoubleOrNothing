@@ -1,7 +1,7 @@
 /**
 Documentation block
 03/04/26 - RH - Modified HTML code to look better
-
+03/19/26 - AJ - Added staging detection variables and thresholds, will implement in loop later
 
 
 
@@ -63,6 +63,22 @@ bool startTimeLogged = false;
 // Launch detection constants
 float launch_acc = 1*9.80665; // Launch acceleration threshold (g), 5g is actually 
 float launch_buffer[25]; // Buffer that contains launch detection acceleration readings
+
+// BEGIN AJ - 03/19/2026
+// Staging detection
+bool staged = false;
+float stagingTime = 0;
+
+// thresholds (i will tune these)
+float burnout_acc_threshold = 5.0; // m/s^2
+float burnout_delta_threshold = -8.0; // sudden drop
+
+float staging_buffer[25];
+
+// for delta method
+float prevAccel = 0;
+
+// END AJ
 
 //check that all components are up and running
 Adafruit_LSM6DSO32 dso32;
@@ -374,6 +390,32 @@ void loop() {
       launchTime = millis();
     }
   }
+  // BEGIN AJ - 03/19/2026
+  // Staging detection
+  if(launch && !staged){
+    float delta = 0;
+    for (int z=0; z<25; z++){
+      dso32.getEvent(&accel, &gyro, &temp2);
+
+      staging_buffer[z] = accel.acceleration.x; // why is it not acceleration.z? idk, just testing with x for now
+
+      delta += staging_buffer[z];
+    }`
+    float average = delta/25;
+
+    if(Serial) {
+      Serial.print("Average: ");
+      Serial.print(average);
+      Serial.println(" m/s");
+    }
+
+    if (average<=burnout_acc_threshold && (average-prevAccel)<=burnout_delta_threshold) {
+      staged = true;
+      stagingTime = millis();
+    }
+    prevAccel = average;
+  }
+  // END AJ
 
   // Stop logging after 2 minutes
   currentTime = millis();
