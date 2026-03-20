@@ -70,13 +70,13 @@ bool staged = false;
 float stagingTime = 0;
 
 // thresholds (i will tune these)
-float burnout_acc_threshold = 5.0; // m/s^2
+float burnout_acc_threshold = 5.0; // m/s^2, potentially change to g's, but for now just testing with m/s^2. This is the acceleration threshold for burnout detection, which is when the acceleration drops significantly after launch. We can tune this value based on expected acceleration profiles of the rocket. A value of 5 m/s^2 means that if the average acceleration drops below 5 m/s^2, we might be in burnout.
 float burnout_delta_threshold = -8.0; // sudden drop
 
 float staging_buffer[25];
 
 // for delta method
-float prevAccel = 0;
+float prevAccel = 0; 
 
 // END AJ
 
@@ -392,26 +392,33 @@ void loop() {
   }
   // BEGIN AJ - 03/19/2026
   // Staging detection
+  static bool prevAccelInit = false;
   if(launch && !staged){
-    float delta = 0;
+    float delta = 0.0f;
     for (int z=0; z<25; z++){
       dso32.getEvent(&accel, &gyro, &temp2);
 
       staging_buffer[z] = accel.acceleration.x; // why is it not acceleration.z? idk, just testing with x for now
 
       delta += staging_buffer[z];
-    }`
-    float average = delta/25;
+      // optional: delay(2); // add spacing if you want a time window
+    }
+    float average = delta/25.0f;
 
     if(Serial) {
       Serial.print("Average: ");
       Serial.print(average);
-      Serial.println(" m/s");
+      Serial.println(" m/s^2");
     }
 
-    if (average<=burnout_acc_threshold && (average-prevAccel)<=burnout_delta_threshold) {
-      staged = true;
-      stagingTime = millis();
+    if (!prevAccelInit) {
+      prevAccel = average;
+      prevAccelInit = true;
+    }else{
+      // Trigger if absolute low accel OR sudden drop compared to previous average
+      if (average <= burnout_acc_threshold || (average - prevAccel) <= burnout_delta_threshold) {
+        staged = true;
+        stagineTime = millis();
     }
     prevAccel = average;
   }
