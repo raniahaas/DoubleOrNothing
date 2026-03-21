@@ -82,8 +82,16 @@ void data_print_test(Adafruit_LSM6DSO32& IMU, MS5611& BARO,int plot=1){ // & aft
         Serial.print(BARO.getPressure(),2); // Pressure is in mBar so values near 999 are close to sea level atmospheric pressure
         Serial.print(',');
 
-        Serial.print("Temp:");
-        Serial.println(BARO.getTemperature(),2);
+        Serial.print("TempB:");
+        Serial.print(BARO.getTemperature(),2); // Temp from barometer, much more accurate than from IMU
+        Serial.print(',');
+
+        Serial.print("TempI:"); // This temperature is from the IMU, may be used to correct for barometer heating
+        Serial.print(temp.temperature);
+        Serial.print(',');
+
+        Serial.print("Alt:");
+        Serial.println(BARO.getAltitudeFeet(),2);
 
         delayMicroseconds(10000);
         }
@@ -364,4 +372,52 @@ void barometer_test(MS5611& BARO, int mode=0) {
         Serial.println(alt);
         delay(100); // Delay to keep data feed somewhat readable in the serial monitor (10Hz)
     }
+}
+
+// IMU MOSFETS - This function opens the three MOSFETs depending on the orientation of the board, used with LEDs in pyro terminals ONLY!
+// Note: This function is intended to be used with LED diodes placed in the pyro terminals for indication of their open/closed state
+//       Using any pyrotechnic device in the ports with this function active WILL result in pyrotechnic ignition!
+// Input Description: 
+// IMU: Sensor specific class variable for the IMU, set in the pre-setup loop code (ex. Adafruit_LSM6DSO32 dso32;) where dso32 would be passed as IMU
+// ig: Integer array that stores GPIO pins for igniters 
+void mosfet_IMU_test(Adafruit_LSM6DSO32& IMU, int ig[3]){
+    // Get data from IMU
+    sensors_event_t accel;
+    sensors_event_t gyro;
+    sensors_event_t temp;
+    IMU.getEvent(&accel, &gyro, &temp);
+
+    // Set vars and get absolute value of accel. in each direction
+    float abs_x = abs(accel.acceleration.x);
+    float abs_y = abs(accel.acceleration.y);
+    float abs_z = abs(accel.acceleration.z);
+
+    // If statements for turning LEDs on
+    if (abs_x > abs_y & abs_x > abs_z){ // Turns on APO LED
+        // Turn on (open) single pyro MOSFET
+        digitalWrite(ig[0],HIGH);
+        // Turn off (close) other pyro MOSFETs
+        digitalWrite(ig[1],LOW);
+        digitalWrite(ig[2],LOW);
+    } else if (abs_y > abs_x & abs_y > abs_z){ // Turns on MAIN LED
+        // Turn on (open) single pyro MOSFET
+        digitalWrite(ig[1],HIGH);
+        // Turn off (close) other pyro MOSFETs
+        digitalWrite(ig[0],LOW);
+        digitalWrite(ig[2],LOW);
+    } else if (abs_z > abs_x & abs_z > abs_y){ // Turns on MOTOR LED
+        // Turn on (open) single pyro MOSFET
+        digitalWrite(ig[2],HIGH);
+        // Turn off (close) other pyro MOSFETs
+        digitalWrite(ig[0],LOW);
+        digitalWrite(ig[1],LOW);
+    } else {
+        // If all equal (very unlikely), turn on all pyro MOSFETs
+        digitalWrite(ig[0],HIGH);
+        digitalWrite(ig[1],HIGH);
+        digitalWrite(ig[2],HIGH);
+    }
+
+    // Delay to avoid flashing LEDs too much
+    delay(250);
 }

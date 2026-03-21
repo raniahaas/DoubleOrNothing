@@ -5,7 +5,7 @@ Documentation block
 03/13/26 - LT - Forked from "Code" branch to create this simplified branch for easy testing of functions
 03/15/26 - LT - Updated the continuity_test function to add a port indicator mode, commented out sensor calls and un-commented continuity test calls
 03/16/26 - LT - Re-added standalone barometer read function to test I2C functionality with PCB, created a function to exclusively read the barometer and not the IMU for this testing
-
+03/21/26 - LT - Added function to test IMU wihout use of serial monitor by activating pyro ports depending on board orientation
 
 
 **/
@@ -36,11 +36,11 @@ sensors_event_t temp2;
 
 
 void setup(void) {
-  Serial.begin(115200);
+  Serial.begin(9600);
   delay(100); // will pause Zero, Leonardo, etc until serial console opens
 
   // All sensor initializations offloaded to below function
-  //sensor_init(dso32,MS5611); // Commented out for testing w/ initial PCB that doesn't have sensors
+  sensor_init(dso32,MS5611); // Commented out for testing w/ initial PCB that doesn't have sensors
 
   // Setup PinModes for continuity testing
   // Setting pins low for continuity testing, setting high opens MOSFETs
@@ -72,7 +72,7 @@ void setup(void) {
 
   digitalWrite(LED_BUILTIN,LOW); // Turns built-in LED off after startup 
 
-  // ** Starup barometer for I2C testing
+/*   // ** Starup barometer for I2C testing
   Wire.begin();
   if (MS5611.begin() == true){
       Serial.println("MS5611 found.");
@@ -82,12 +82,12 @@ void setup(void) {
   }
   Serial.println();
   MS5611.setOversampling(OSR_STANDARD);
-  // ** Remove all code between asterisks once initial I2C function testing complete!
+  // ** Remove all code between asterisks once initial I2C function testing complete! */
 }
 
 void loop() {
   // Prints sensor data (Commented out for now)
-  // data_print_test(dso32,MS5611,1); // Commented out for testing w/ initial PCB that doesn't have sensors
+  //data_print_test(dso32,MS5611,1); // Commented out for testing w/ initial PCB that doesn't have sensors
   
   // Tests continuity
   // Turn the GPIO ports for ignition and continuity into integer arrays for input to function
@@ -96,7 +96,7 @@ void loop() {
   //continuity_test(2,ig,cont); // Commented out for ease of testing
 
   // Quick and dirty barometer reading code for I2C testing (moved to seperate function) **
-  barometer_test(MS5611,0);
+  //barometer_test(MS5611,0);
   // ** Remove all code between asterisks once initial I2C function testing complete!
 
   // NOTE: Below code may be redundant, commented out for now but delete if confirmed redundant with testing 
@@ -110,4 +110,7 @@ void loop() {
 
   dso32.getEvent(&accel, &gyro, &temp2); // Gets data from IMU */
   // End Note!
+
+  // MOSFET IMU Test function
+  mosfet_IMU_test(dso32,ig);
 }
