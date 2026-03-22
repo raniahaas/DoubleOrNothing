@@ -421,3 +421,79 @@ void mosfet_IMU_test(Adafruit_LSM6DSO32& IMU, int ig[3]){
     // Delay to avoid flashing LEDs too much
     delay(250);
 }
+
+// Serial Pyro Ignition - Function that allows for the control of pyro MOSFETs via commands sent to through the serial monitor
+void pyro_serial(int ig[3], int cont[3]){
+    // Check if serial port is open
+    if(Serial){
+        delay(1000);
+        // Initial setup
+        Serial.println("Welcome to the Serial Pyro Tester!\n");
+        Serial.println("Please select which port(s) you intend to test by entering the following into the serial port:");
+        Serial.println("APO Port: 1\nMAIN Port: 2\nMOTOR Port: 3");
+
+        String in = "null"; // Variable for serial input
+        long port = 10;
+        long restart = 0; // Variable that determines if the function keeps asking for an input
+        while (Serial.available() == 0) {} // Waits for input
+        while (restart == 0){
+            in = Serial.readString();
+            delay(5);
+            in.trim(); // Removes any potential formatting like \n from the string
+            if (in == "1" or in == "2" or in == "3"){ // If one of the ports is selected correctly, don't keep asking
+                delay(5);
+                restart = 1;
+            } else { // If no correct input, keep asking
+                Serial.println("Please re-enter a correct input");
+                restart=0;
+                while (Serial.available() == 0) {} // Waits for input
+            }
+
+            // Readback
+            delay(5);
+            if (in == "1"){
+                Serial.print("\nYour selected port was: ");
+                Serial.println("APO");
+                port = 0;
+            } else if (in == "2"){
+                Serial.print("\nYour selected port was: ");
+                Serial.println("MAIN");
+                port = 1;
+            } else if (in == "3"){
+                Serial.print("\nYour selected port was: ");
+                Serial.println("MOTOR");
+                port = 2;
+            }
+
+            if (port==0 || port==1 || port==2){
+                // Display ignition information if correct input
+                Serial.println("Type FIRE into the serial port to activate the chosen pyro channel or type ABORT to abort test");
+            }
+        }
+
+        // Ignition
+        restart = 0;
+        in = "null";
+        while (Serial.available() == 0) {} // Waits for input
+        while (restart == 0){
+            in = Serial.readString();
+            in.trim();
+            if (in == "FIRE"){ // If correct fire command ordered, don't keep asking
+                restart = 1;
+            } else if (in == "ABORT") { // If abort command ordered, end the function
+                Serial.println("Aborting Test!\n");
+                return;
+            }else { // If no correct input, keep asking
+                Serial.println("Please re-enter a correct input");
+                restart=0;
+                while (Serial.available() == 0) {} // Waits for input
+            }
+        }
+
+        Serial.println("\nFiring Started!");
+        digitalWrite(ig[port],HIGH); // Open pyro MOSFET
+        delay(5000);
+        digitalWrite(ig[port],LOW); // Closes pyro MOSFET after 5 seconds
+        Serial.println("Firing Complete!\n");
+    }
+}

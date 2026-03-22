@@ -6,6 +6,7 @@ Documentation block
 03/15/26 - LT - Updated the continuity_test function to add a port indicator mode, commented out sensor calls and un-commented continuity test calls
 03/16/26 - LT - Re-added standalone barometer read function to test I2C functionality with PCB, created a function to exclusively read the barometer and not the IMU for this testing
 03/21/26 - LT - Added function to test IMU wihout use of serial monitor by activating pyro ports depending on board orientation
+03/21/26 - LT - Added function to ignite pyro channels via the serial monitor, currently only supports a single port at a time and doesn't test for continuity
 
 
 **/
@@ -112,5 +113,8 @@ void loop() {
   // End Note!
 
   // MOSFET IMU Test function
-  mosfet_IMU_test(dso32,ig);
+  //mosfet_IMU_test(dso32,ig);
+
+  // MOSFET Serial Test function
+  pyro_serial(ig,cont);
 }
