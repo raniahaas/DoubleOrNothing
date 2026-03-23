@@ -2,9 +2,7 @@
 Documentation block
 03/04/26 - RH - Modified HTML code to look better
 03/12/26 - RH - Cleaned up comments and created separate file for File mangement/logging
-
-
-
+03/23/26 - RH - Added function for apogee detection for console log/CSV
 
 */
 #include <Arduino.h>
@@ -16,24 +14,27 @@ Documentation block
 #include <PubSubClient.h>
 #include <WiFiClient.h>
 #include <WiFiAP.h>
-// File system setup
+
+//link external funcitons
 #include <LittleFS.h>
 #include "FS.h"
 #include "fileManagement.h"
+#include "localFunctions.h"
 
-// Formats file system if not already formatted
+//formats file system if not already formatted
 #define FORMAT_LITTLEFS_IF_FAILED true
 
-// Set these to your desired credentials.
+//WIFI CREDS
 const char *ssid = "XIAO_ESP32S3";
 const char *password = "password";
 
 WiFiServer server(80);
 
-// Set data rate parameters 
+//data rate parameters 
 unsigned long data_rate = 100; // Data rate in Hz
 unsigned long iter = 0;
-// Create storage arrays, has underscores after name for temporary deconfliction w/ existing code
+
+//storage arrays
 float t_[20]={0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
 float temp_[20]={0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
 float pressure_[20]={0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
@@ -51,6 +52,7 @@ unsigned long startTime = 0;
 float launchTime = 0;
 unsigned long lastWriteTime = 0;
 const unsigned long writeInterval = 1000/100; // 100Hz
+
 // Time to touchdown minimum 160, probably do 200
 const unsigned long runDuration = 180*1000;  // 180 Seconds
 bool loggingActive = true;
@@ -70,9 +72,6 @@ sensors_event_t accel;
 sensors_event_t gyro;
 sensors_event_t temp2;
 
-// Define pins for continuity testing
-
-// NOTE! Reflects ports on final flight computer, not breadboard computer!
 #define ig1 2
 #define cont1 1
 #define ig2 4
@@ -156,9 +155,32 @@ void loop() {
   unsigned long currentTime = millis();
 
   dso32.getEvent(&accel, &gyro, &temp2); // Gets data from IMU
+  
 
   // Launch detection ----------------------------------------
   if (!launch){
+    dso32.getEvent(&accel, &gyro, &temp2); // Gets data from IMU
+    MS5611.read(); // Must be called each time before getting pressure or temp using below functions!
+    float temp = MS5611.getTemperature();
+    float pressure = MS5611.getPressure();
+    // Altitude relative to sea level
+    float seaLevelAltitude = 44330.0 * (1.0 - pow(pressure / 1013.25, 0.1903));
+
+    // Altitude relative to launch site
+    int j =0;
+    float relativeAltitude = seaLevelAltitude - 226.2;
+    temp_[j]=temp;
+    pressure_[j]=pressure;
+    Ax_[j]=xG;
+    Ay_[j]=yG;
+    Az_[j]=zG;
+    Wx_[j]=gyroX;
+    Wy_[j]=gyroY;
+    Wz_[j]=gyroZ;
+    Alt_[j]=seaLevelAltitude;
+    RelativeAlt_[j]=relativeAltitude;
+
+
     // Read 25 samples of acceleration
     float delta = 0;
     for (int z=0; z<25; z++){
@@ -184,6 +206,9 @@ void loop() {
       launchTime = millis();
     }
   }
+
+  //RH - apogee funciton in LocalFunction.cpp
+  checkApogee(dso32, MS5611, launch);
 
   // Stop logging after 2 minutes
   currentTime = millis();
@@ -212,43 +237,12 @@ void loop() {
     }
   }
 
-  // Even newer version!
-  // Reference for how the sensor reading works -------------------------------------------------------------------------------------------------------
+  //Reference for how the sensor reading works -------------------------------------------------------------------------------------------------------
   if (loggingActive && launch){
       for (int i=0; i<20; i++) {
         // Computes current time 
         float currentTime = millis();
-        float normalTime = currentTime - launchTime; // Float for formatting, maybe fix later
-
-        dso32.getEvent(&accel, &gyro, &temp2); // Gets data from IMU
-        MS5611.read(); // Must be called each time before getting pressure or temp using below functions!
-        float temp = MS5611.getTemperature();
-        float pressure = MS5611.getPressure();
-        // Altitude relative to sea level
-        float seaLevelAltitude = 44330.0 * (1.0 - pow(pressure / 1013.25, 0.1903));
-
-        // Altitude relative to launch site
-        float relativeAltitude = seaLevelAltitude - 226.2;
-
-        float zG = accel.acceleration.z;
-        float xG = accel.acceleration.x;
-        float yG = accel.acceleration.y;
-
-        float gyroX = gyro.gyro.x;
-        float gyroY = gyro.gyro.y;
-        float gyroZ = gyro.gyro.z;
-
-        t_[i]=normalTime;
-        temp_[i]=temp;
-        pressure_[i]=pressure;
-        Ax_[i]=xG;
-        Ay_[i]=yG;
-        Az_[i]=zG;
-        Wx_[i]=gyroX;
-        Wy_[i]=gyroY;
-        Wz_[i]=gyroZ;
-        Alt_[i]=seaLevelAltitude;
-        RelativeAlt_[i]=relativeAltitude;
+        float normalTime = currentTime - launchTime; 
 
         iter=1;
       }
@@ -262,31 +256,22 @@ void loop() {
             file.printf("%.5f,%.5f,%.5f,",Ax_[k],Ay_[k],Az_[k]); // Logs acceleration
             file.printf("%.5f,%.5f,%.5f,",Wx_[k],Wy_[k],Wz_[k]); // Logs gyro readings
             file.printf("%.5f,%.5f \n",Alt_[k],RelativeAlt_[k]); // Logs Altitude
-
-            //BEGIN RH - Logic for apogee detection
-            //logging two gyro points and determining based on Euclidean norm apogee
-
-            // ||x|| = sqrt(x_1^2 + x_2^2 + ... x_n^2)
-            float gyrolog = sqrt(
-              (Wx_[k]) * (Wx_[k]) + (Wy_[k]) * (Wy_[k]) + (Wz_[k]) * (Wz_[k])
-            );
-
-            static float gyroPrev = 0;
-            static bool apogee = false;
-
-            //pass
-            if (k > 0 && !apogee) {
-              //detection logic
-              if (gyroPrev > gyrolog) {
-                Serial.print("Apogee Detected");
-                Serial.printf("Apogee at: %.5f, %.5f, %.5f\n", Wx_[k-1], Wy_[k-1], Wz_[k-1]);
-                apogee = true;
-              }
             }
-            gyroPrev = gyrolog;
-            }
-            //END RH
+          
+
+          //RH - Log apogee to file
+          if (apogeeDetected) {
+            file.print("Apogee Log");
+            file.printf("Gyro raw: X=%.5f, Y=%.5f, Z=%.5f\n", apogee_gx, apogee_gy, apogee_gz);
+            file.printf("Gyro magnitude: %.5f\n", apogee_gyroMag);
+            file.printf("Altitude raw: %.5f\n", apogee_alt_raw);
+            file.printf("Altitude relative: %.5f\n", apogee_alt_rel);
+
+            //only write once
+            apogeeDetected = false;
           }
+          //END RH
+          } 
 
           file.close(); // close the file after the loop
 
