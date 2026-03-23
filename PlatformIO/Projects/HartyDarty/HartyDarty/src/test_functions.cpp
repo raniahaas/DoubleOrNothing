@@ -224,6 +224,10 @@ void sensor_init(Adafruit_LSM6DSO32& IMU, MS5611& BARO){
     }
 
     Serial.println("LSM6DSO32 Found!");
+    
+    // Set I2C to increased clock speed
+    Wire.setClock(400000); // Set clock speed to 300kHz from default 100kHz for faster reads
+    // This being at the default rate previously limited the sample rate from the IMU to ~400Hz 
 
     IMU.setAccelRange(LSM6DSO32_ACCEL_RANGE_16_G);
     Serial.print("Accelerometer range set to: ");
@@ -264,7 +268,7 @@ void sensor_init(Adafruit_LSM6DSO32& IMU, MS5611& BARO){
         break; // unsupported range for the DSO32
     }
 
-    IMU.setAccelDataRate(LSM6DS_RATE_208_HZ);
+    IMU.setAccelDataRate(LSM6DS_RATE_833_HZ); // Updated to be 833 Hz rather than 208 Hz previously used
     Serial.print("Accelerometer data rate set to: ");
     switch (IMU.getAccelDataRate()) {
     case LSM6DS_RATE_SHUTDOWN:
@@ -490,7 +494,11 @@ void pyro_serial(int ig[3], int cont[3]){
             }
         }
 
-        Serial.println("\nFiring Started!");
+
+        Serial.println("\nCountdown Started - 10 seconds to firing!");
+        delay(10000);
+        Serial.println("Firing Started!");
+        delay(10);
         digitalWrite(ig[port],HIGH); // Open pyro MOSFET
         delay(5000);
         digitalWrite(ig[port],LOW); // Closes pyro MOSFET after 5 seconds

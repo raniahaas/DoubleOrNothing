@@ -13,9 +13,15 @@ Documentation block
 #include <Arduino.h>
 #include <Adafruit_LSM6DSO32.h>
 #include <MS5611.h>
+#include <MadgwickAHRS.h> // Madgwick filter library
 #include <test_functions.h>
+#include <globals.h> // Header file for the global variables 
+#include <orientation.h> 
 
 // Check that all components are up and running
+
+// Init madgwick filter
+Madgwick filter;
 
 // Init IMU
 Adafruit_LSM6DSO32 dso32;
@@ -35,6 +41,19 @@ sensors_event_t temp2;
 #define ig3 2
 #define cont3 1
 
+// Define global variables for angular position - ONLY DONE IN THIS FILE!
+float ang_x = 0;
+float ang_y = 0;
+float ang_z = 0;
+
+// Define time variables
+long prev_micros;
+long print_delay;
+
+// Set rate for IMU (in Hz)
+unsigned long rate = 500;
+float microsPerRead = 1000000.0/rate; // Calculated the number of mircoseconds per reading of the IMU
+
 
 void setup(void) {
   Serial.begin(9600);
@@ -42,6 +61,9 @@ void setup(void) {
 
   // All sensor initializations offloaded to below function
   sensor_init(dso32,MS5611); // Commented out for testing w/ initial PCB that doesn't have sensors
+
+  // Setup Madwick filter for IMU, eventiall move to the IMU init function
+  filter.begin(500);
 
   // Setup PinModes for continuity testing
   // Setting pins low for continuity testing, setting high opens MOSFETs
@@ -84,6 +106,11 @@ void setup(void) {
   Serial.println();
   MS5611.setOversampling(OSR_STANDARD);
   // ** Remove all code between asterisks once initial I2C function testing complete! */
+
+  // Set first value for time variables (microseconds)
+  prev_micros = micros();
+  // Set value for print delay
+  print_delay = millis();
 }
 
 void loop() {
@@ -116,5 +143,31 @@ void loop() {
   //mosfet_IMU_test(dso32,ig);
 
   // MOSFET Serial Test function
-  pyro_serial(ig,cont);
+  //pyro_serial(ig,cont); // Commented out to test global variables for angular position
+
+  // Test global variables 
+
+/*   // Print position every 5 seconds
+  int delay_time = millis() - print_delay;
+  if (delay_time >= (2500)){ // Prints the position every 2.5 seconds
+    prev_micros = simple_position(dso32,prev_micros,1); // Position with rate info
+
+    Serial.print("X: ");
+    Serial.print(ang_x*(180.0/PI));
+    Serial.print(" Y: ");
+    Serial.print(ang_y*(180.0/PI));
+    Serial.print(" Z ");
+    Serial.println(ang_z*(180.0/PI));
+
+    print_delay = millis(); // Update delay time
+  } else {
+    prev_micros = simple_position(dso32,prev_micros); // Position w/o rate info 
+  } */
+
+  // Test Madgwick filter
+  //prev_micros = madgwick_position(dso32,filter,prev_micros,rate,1);
+
+  // Test vector offset
+  vector_disp(dso32,0);
+  delay(10);
 }
