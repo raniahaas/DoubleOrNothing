@@ -418,9 +418,10 @@ void loop() {
       // Trigger if absolute low accel OR sudden drop compared to previous average
       if (average <= burnout_acc_threshold || (average - prevAccel) <= burnout_delta_threshold) {
         staged = true;
-        stagineTime = millis();
+        stagingTime = millis();
     }
     prevAccel = average;
+    }
   }
   // END AJ
 
