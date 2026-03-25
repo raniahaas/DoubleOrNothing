@@ -411,6 +411,15 @@ void loop() {
       Serial.println(" m/s^2");
     }
 
+    // Ensure launch event print is also available here (keeps event prints within lines 398-435)
+    if (launch) {
+      if (Serial) {
+        Serial.println("Event: Launch detected");
+        Serial.print("LaunchTime (ms): ");
+        Serial.println(launchTime);
+      }
+    }
+
     if (!prevAccelInit) {
       prevAccel = average;
       prevAccelInit = true;
@@ -418,7 +427,12 @@ void loop() {
       // Trigger if absolute low accel OR sudden drop compared to previous average
       if (average <= burnout_acc_threshold || (average - prevAccel) <= burnout_delta_threshold) {
         staged = true;
-        stagineTime = millis();
+        stagingTime = millis();
+        if (Serial) {
+          Serial.println("Event: Staging detected");
+          Serial.print("StagingTime (ms): ");
+          Serial.println(stagingTime);
+        }
     }
     prevAccel = average;
   }
