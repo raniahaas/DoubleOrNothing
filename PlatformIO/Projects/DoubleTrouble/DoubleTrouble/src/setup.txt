@@ -1,0 +1,76 @@
+Here is just additional notes to keep main and other files clean and additionally host old code
+
+WiFi Setup -----------------
+
+get call for wifi setup
+hostname: esp32s3-000000
+
+WiFiAccessPoint.ino creates a WiFi access point and provides a web server on it.
+
+Steps:
+1. Connect to the access point "yourAp"
+2. Point your web browser to http://192.168.4.1/H to turn the LED on or http://192.168.4.1/L to turn it off
+OR
+Run raw TCP "GET /H" and "GET /L" on PuTTY terminal with 192.168.4.1 as IP address and 80 as port
+
+Created for arduino-esp32 on 04 July, 2018
+by Elochukwu Ifediora (fedy0)
+
+Old Sensor Data Code:
+// Log sensor data every 20 seconds
+  // if (loggingActive && (currentTime - lastWriteTime >= writeInterval)) {
+  //   lastWriteTime = currentTime;
+  
+  //   MS5611.read(); // Must be called each time before getting pressure or temp using below functions!
+  //   float temp = MS5611.getTemperature();
+  //   float pressure = MS5611.getPressure();
+  //   // Altitude relative to sea level
+  //   float seaLevelAltitude = 44330.0 * (1.0 - pow(pressure / 1013.25, 0.1903));
+
+  //   // Altitude relative to launch site
+  //   float relativeAltitude = seaLevelAltitude - 226.2;
+
+
+  //   // Old version
+  //   // File file = LittleFS.open("/data.txt", "a");  // append mode
+  //   // if (file) {
+  //   //   // Print to file
+  //   //   file.printf("T+: %.2f ms\n",startTime-currentTime);
+  //   //   file.printf("Temp: %.2f C, Pressure: %.2f mbar\n", temp, pressure);
+  //   //   file.printf("Accel (g): X=%.2f, Y=%.2f, Z=%.2f\n", xG, yG, zG);
+  //   //   file.printf("Gyro (°/s): X=%.2f, Y=%.2f, Z=%.2f\n\n", gyroX, gyroY, gyroZ);
+  //   //   file.printf("Altitude (ASL): %.2f m\n", seaLevelAltitude);
+  //   //   file.printf("Altitude (from Dayton): %.2f m\n", relativeAltitude); 
+
+  //   //   // Print to serial monitor upon logging completion 
+  //   //   Serial.println("Logging Completed");
+  //   // } else {
+  //   //   Serial.println("Failed to open /data.txt");
+  //   // }
+
+  //   // New version
+  //   File file = LittleFS.open("/data.txt","a"); // "a" is for append mode
+  //   if (file) { // Makes sure file open
+  //     // Computes current time 
+  //     float normalTime = currentTime - startTime; // Float for formatting, maybe fix later
+
+  //     // Print to file
+  //     file.printf("%.0f,",normalTime); // Logs time
+  //     file.printf("%.2f,%.2f,",temp,pressure); // Logs temperature and pressure
+  //     file.printf("%.5f,%.5f,%.5f,",xG,yG,zG); // Logs acceleration
+  //     file.printf("%.5f,%.5f,%.5f,",gyroX,gyroY,gyroZ); // Logs gyro readings
+  //     file.printf("%.5f,%.5f \n",seaLevelAltitude,relativeAltitude); // Logs Altitude
+  //     file.close(); // Closes file
+
+  //     // Serial print upon logging completion
+  //     if(Serial){
+  //       Serial.print("Logging Complete at T+: ");
+  //       Serial.print((currentTime-startTime)/1000.0); // Converts current time from ms to seconds
+  //       Serial.println(" seconds");
+  //     }
+  //   } else {
+  //     if(Serial){
+  //       Serial.println("Failed to open /data.txt");
+  //     }
+  //   }
+  // }

@@ -6,11 +6,14 @@ We will be primarly using [Visual Studio Code]([url](https://code.visualstudio.c
 ## Setting Up VSC
 There are a few primary extensions you will want to add if you are working in C++ for the first time in VSC. Noteably, the C/C++ language from Microsoft
 <img width="306" height="156" alt="Screenshot 2026-02-05 at 13 36 02" src="https://github.com/user-attachments/assets/ac8fb331-dd2a-4d85-a1d5-6f9d2b8c93f9" />
+Also, look to install the serial monitor for later. 
+<img width="1155" height="666" alt="Screenshot 2026-02-11 at 19 11 49" src="https://github.com/user-attachments/assets/1169bb0e-64f3-4185-a0fc-edc1f656ad70" />
 You can also additionally add the Extension Pack and other similar C++ Intellisense options but it is not required. _If you have previously worked with C++ in your VSC enviornment please make sure to disable Clang when working on the Avionics code!_ There are a few issues with Clang and Platformio
 <img width="728" height="692" alt="Screenshot 2026-02-05 at 13 38 08" src="https://github.com/user-attachments/assets/cb8a48ff-a3b7-4e95-afb8-6f3efbaa37da" />
 Turning off or on an extension can simply be executed by the Enable/Disable button.
 If you would like to test if your device is running C++ properly, try running this code
-```#include <iostream>
+```
+#include <iostream>
 int main () {
     std::cout<<"Hello World!\n" << std::endl;
     return 0;
