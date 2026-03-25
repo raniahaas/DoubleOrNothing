@@ -428,13 +428,17 @@ void loop() {
       if (average <= burnout_acc_threshold || (average - prevAccel) <= burnout_delta_threshold) {
         staged = true;
         stagingTime = millis();
+<<<<<<< HEAD
         if (Serial) {
           Serial.println("Event: Staging detected");
           Serial.print("StagingTime (ms): ");
           Serial.println(stagingTime);
         }
+=======
+>>>>>>> 05b991914aca5f7e901c066e3fbd95577b24f9fa
     }
     prevAccel = average;
+    }
   }
   // END AJ
 
