@@ -104,7 +104,7 @@ void vector_disp (Adafruit_LSM6DSO32& IMU, unsigned long mode = 1){
     float yOff = atan2((-ax),sqrt((ay*ay) + (az*az))); // Pitch (rad)
 
     // Calculate the overall tilt angle from the +Z axis
-    float tilt = acos(cos(xOff)*cos(yOff));
+    float tilt = acos(cos(xOff)*cos(yOff)); // Don't still fully understand why this works, but it seems to be accurate
 
     // Print
     Serial.print("X: ");
