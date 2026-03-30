@@ -56,3 +56,7 @@ If you click on this, it should take you to that home page we were talking about
 <img width="1071" height="783" alt="Screenshot 2026-02-05 at 14 10 20" src="https://github.com/user-attachments/assets/92098429-ce25-4bbd-94e0-0de82c4fb953" />
 If you open project, note your path may be a little different or hard to find at first but you should be opening the 'StageTwo' File folder, you can note if it is the correct one if you see a folder inside of it called 'src'. This is where the PlatformIO.ini file is which basically tells VSC and PlatformIO what kind of hardware we are going to be coding on. Additionally, you should see a check mark and right arrow which we will use when we are checking if code is ready to flash. For now, that is it! Note you will have to do this PlatformIO setup each time you are opening the file for the first time so keep this handy as well as your path!
 
+# Resources
+- [ESP32 Doc on local servers](https://randomnerdtutorials.com/esp32-web-server-arduino-ide/)
+- [Mapping apogee with acceleration and barometer data ](https://bookdown.org/rdpeng/timeseriesbook/example-estimating-the-apogee-of-a-model-rocket.html)
+
