@@ -71,7 +71,7 @@ float stagingTime = 0;
 
 // thresholds (i will tune these)
 float burnout_acc_threshold = 5.0; // m/s^2, potentially change to g's, but for now just testing with m/s^2. This is the acceleration threshold for burnout detection, which is when the acceleration drops significantly after launch. We can tune this value based on expected acceleration profiles of the rocket. A value of 5 m/s^2 means that if the average acceleration drops below 5 m/s^2, we might be in burnout.
-float burnout_delta_threshold = -8.0; // sudden drop
+float burnout_delta_threshold = -2.0; // sudden drop
 
 float staging_buffer[25];
 
