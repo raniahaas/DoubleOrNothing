@@ -66,9 +66,57 @@ void setup(void) {
   Serial.println();
 }
 
+// Derive Angular Position from IMU data
+float roll = 0.0;
+float pitch = 0.0;
+unsigned long last_micros = 0; 
+
+void AngularPosition() {
+  // Read IMU data
+  dso32.getEvent(&accel, &gyro, &temp2);
+
+  float ax = accel.acceleration.x;
+  float ay = accel.acceleration.y;
+  float az = accel.acceleration.z;
+
+  //Radians.
+  float gx = gyro.gyro.x; 
+  float gy = gyro.gyro.y;
+  float gz = gyro.gyro.z;
+
+  //dt (in seconds) using micros()
+  unsigned long current_micros = micros();
+  if (last_micros == 0) 
+  {
+      last_micros = current_micros; 
+  }
+  float dt = (current_micros - last_micros) / 1000000.0;
+  last_micros = current_micros;
+
+  //Accelerometer angles 
+  float roll_acc  = atan2(ay, az);
+  float pitch_acc = atan2(-ax, sqrt(ay * ay + az * az));
+
+  roll  = 0.98 * (roll + gx * dt) + 0.02 * roll_acc;
+  pitch = 0.98 * (pitch + gy * dt) + 0.02 * pitch_acc;
+
+  //Convert to degrees
+  float roll_deg  = roll * 180.0 / PI;
+  float pitch_deg = pitch * 180.0 / PI;
+
+  //Output 
+  Serial.print(">Roll:");
+  Serial.print(roll_deg);
+  Serial.print(",");
+  Serial.print("Pitch:");
+  Serial.println(pitch_deg);
+}
+
+
 void loop() {
   // Prints sensor data (Commented out for now)
   data_print_test(dso32,MS5611,1);
+  AngularPosition();
   
   // Tests continuity
   // Turn the GPIO ports for ignition and continuity into integer arrays for input to function
@@ -88,3 +136,4 @@ void loop() {
   dso32.getEvent(&accel, &gyro, &temp2); // Gets data from IMU */
   // End Note!
 }
+
