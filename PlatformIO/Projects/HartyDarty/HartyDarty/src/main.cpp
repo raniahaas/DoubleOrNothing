@@ -143,7 +143,7 @@ void loop() {
   //mosfet_IMU_test(dso32,ig);
 
   // MOSFET Serial Test function
-  //pyro_serial(ig,cont); // Commented out to test global variables for angular position
+  pyro_serial(ig,cont); // Commented out to test global variables for angular position
 
   // Test global variables 
 
@@ -168,6 +168,6 @@ void loop() {
   //prev_micros = madgwick_position(dso32,filter,prev_micros,rate,1);
 
   // Test vector offset
-  vector_disp(dso32,0);
-  delay(10);
+  //vector_disp(dso32,0); // Commented out for testing
+  //delay(10);
 }
