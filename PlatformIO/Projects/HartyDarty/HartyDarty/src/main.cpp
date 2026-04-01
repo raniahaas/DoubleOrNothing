@@ -15,6 +15,7 @@ Documentation block
 #include <MS5611.h>
 #include <MadgwickAHRS.h> // Madgwick filter library
 #include <test_functions.h>
+#include <localFunctions.h>
 #include <globals.h> // Header file for the global variables 
 #include <orientation.h> 
 
@@ -31,6 +32,9 @@ MS5611 MS5611(0x77);
 sensors_event_t accel;
 sensors_event_t gyro;
 sensors_event_t temp2;
+
+//Universal variables from location functions
+bool launch = false;
 
 // Define pins for continuity testing
 // NOTE! Reflects ports on final flight computer, not breadboard computer!
@@ -121,6 +125,10 @@ void loop() {
   // Turn the GPIO ports for ignition and continuity into integer arrays for input to function
   int ig[3]={ig1,ig2,ig3};
   int cont[3]={cont1,cont2,cont3};
+
+  checkStaging(MS5611, dso32, launch);
+  checkStaging(MS5611, dso32, launch);
+
   //continuity_test(2,ig,cont); // Commented out for ease of testing
 
   // Quick and dirty barometer reading code for I2C testing (moved to seperate function) **

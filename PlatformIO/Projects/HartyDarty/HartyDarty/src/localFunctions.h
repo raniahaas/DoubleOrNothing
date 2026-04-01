@@ -20,5 +20,19 @@ extern float apogee_alt_rel;
 
 // Function to call from loop()
 void checkApogee(Adafruit_LSM6DSO32 &imu, MS5611 &baro, bool launch);
+void checkStaging(Adafruit_LSM6DSO32 &dso32, bool launch);
+
+
+//AJ BEGIN
+extern bool staged;
+extern float stagingTime;
+
+extern float burnout_acc_threshold;
+
+extern float staging_buffer[25];
+
+extern float prevAccel;
+extern float launchTime;
+//AJ END
 
 #endif
