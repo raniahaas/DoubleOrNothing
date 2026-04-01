@@ -2,13 +2,23 @@
 Documentation block
 03/04/26 - RH - Modified HTML code to look better
 03/12/26 - RH - Cleaned up comments and created separate file for File mangement/logging
-03/23/26 - RH - Added function for apogee detection for console log/CSV
+03/13/26 - LT - Forked from "Code" branch to create this simplified branch for easy testing of functions
+03/15/26 - LT - Updated the continuity_test function to add a port indicator mode, commented out sensor calls and un-commented continuity test calls
+03/16/26 - LT - Re-added standalone barometer read function to test I2C functionality with PCB, created a function to exclusively read the barometer and not the IMU for this testing
+03/21/26 - LT - Added function to test IMU wihout use of serial monitor by activating pyro ports depending on board orientation
+03/21/26 - LT - Added function to ignite pyro channels via the serial monitor, currently only supports a single port at a time and doesn't test for continuity
 
-*/
+
+**/
 #include <Arduino.h>
 #include <Adafruit_LSM6DSO32.h>
 #include <MS5611.h>
+#include <MadgwickAHRS.h> // Madgwick filter library
 #include <test_functions.h>
+#include <globals.h> // Header file for the global variables 
+#include <orientation.h> 
+
+// Check that all components are up and running
 
 #include <WiFi.h>
 #include <PubSubClient.h>
@@ -66,7 +76,7 @@ float launch_buffer[25]; // Buffer that contains launch detection acceleration r
 //Check that all components are up and running
 Adafruit_LSM6DSO32 dso32;
 
-// Set I2C adress for barometer - Ignore any error here relating to "not a class name"
+// Set I2C adress for barometer - Ignore any error here relating to "not a class name" or "not a name type"
 MS5611 MS5611(0x77);
 sensors_event_t accel;
 sensors_event_t gyro;
@@ -81,69 +91,79 @@ sensors_event_t temp2;
 
 
 void setup(void) {
-  Serial.begin(115200);
+  Serial.begin(9600);
   delay(100); // will pause Zero, Leonardo, etc until serial console opens
 
-  // Initialize & Format file system
-  if(!LittleFS.begin(FORMAT_LITTLEFS_IF_FAILED)){
-    Serial.println("LittleFS Mount Failed");
-    return;
-  }
-  // All sensor initializations offloaded to 
-  sensor_init(dso32,MS5611);
+  // All sensor initializations offloaded to below function
+  sensor_init(dso32,MS5611); // Commented out for testing w/ initial PCB that doesn't have sensors
 
-  //Setup PinModes for continuity testing
-  //Setting low for continuity testing
+  // Setup Madwick filter for IMU, eventiall move to the IMU init function
+  filter.begin(500);
+
+  // Setup PinModes for continuity testing
+  // Setting pins low for continuity testing, setting high opens MOSFETs
 
   // Mostfet 1
+  // Note: Set to Apogee on PCB
   analogSetPinAttenuation(cont1,ADC_11db);
   pinMode(ig1,OUTPUT);
   pinMode(cont1,INPUT);
   digitalWrite(ig1,LOW); // Sets mosfet, LOW means off, HIGH means on
   float ADC = 0;
   // Mostfet 2
+  // Note: Set to Main on PCB
   analogSetPinAttenuation(cont2,ADC_11db);
   pinMode(ig2,OUTPUT);
   pinMode(cont2,INPUT);
   digitalWrite(ig2,LOW); // Sets mosfet, LOW means off, HIGH means on
   // Mosfet 3
+  // Note: Set to Motor on PCB
   analogSetPinAttenuation(cont3,ADC_11db);
   pinMode(ig3,OUTPUT);
   pinMode(cont3,INPUT);
   digitalWrite(ig3,LOW); // Sets mosfet, LOW means off, HIGH means on
 
+  // Define the built-in LED as an output that we can control
   pinMode(LED_BUILTIN, OUTPUT);
   //Serial.begin(115200);
   Serial.println();
 
-  // Start Access Point (local-only WiFi)
-  WiFi.softAP(ssid, password);
-  IPAddress apIP = WiFi.softAPIP();
-  Serial.print("AP IP address: ");
-  Serial.println(apIP);
+  digitalWrite(LED_BUILTIN,LOW); // Turns built-in LED off after startup 
 
-  // Start web server
-  server.begin();
-  Serial.println("Server started");
+/*   // ** Starup barometer for I2C testing
+  Wire.begin();
+  if (MS5611.begin() == true){
+      Serial.println("MS5611 found.");
+  } else{
+      Serial.println("MS5611 not found. halt.");
+      while (1);
+  }
+  Serial.println();
+  MS5611.setOversampling(OSR_STANDARD);
+  // ** Remove all code between asterisks once initial I2C function testing complete! */
 
-  // Create file 
-  writeFile(LittleFS,"/data.txt","");
-
-  // Gets start time at the end of the startup cycle 
-  startTime = millis();
+  // Set first value for time variables (microseconds)
+  prev_micros = micros();
+  // Set value for print delay
+  print_delay = millis();
 }
 
 void loop() {
   // Prints sensor data (Commented out for now)
-  //data_print_test(dso32,MS5611,1);
+  //data_print_test(dso32,MS5611,1); // Commented out for testing w/ initial PCB that doesn't have sensors
   
-
+  // Tests continuity
   // Turn the GPIO ports for ignition and continuity into integer arrays for input to function
   int ig[3]={ig1,ig2,ig3};
   int cont[3]={cont1,cont2,cont3};
-  // continuity_test(0,ig,cont); // Commented out for ease of testing
+  //continuity_test(2,ig,cont); // Commented out for ease of testing
 
-  float zG = accel.acceleration.z;
+  // Quick and dirty barometer reading code for I2C testing (moved to seperate function) **
+  //barometer_test(MS5611,0);
+  // ** Remove all code between asterisks once initial I2C function testing complete!
+
+  // NOTE: Below code may be redundant, commented out for now but delete if confirmed redundant with testing 
+/*   float zG = accel.acceleration.z;
   float xG = accel.acceleration.x;
   float yG = accel.acceleration.y;
 
@@ -151,6 +171,8 @@ void loop() {
   float gyroY = gyro.gyro.y;
   float gyroZ = gyro.gyro.z;
 
+  dso32.getEvent(&accel, &gyro, &temp2); // Gets data from IMU */
+  // End Note!
 
   unsigned long currentTime = millis();
 
@@ -186,26 +208,24 @@ void loop() {
     for (int z=0; z<25; z++){
       dso32.getEvent(&accel, &gyro, &temp2);
 
-      launch_buffer[z] = accel.acceleration.x;
+  // Test global variables 
 
-      delta += launch_buffer[z];
-      if(Serial){
-        Serial.println(accel.acceleration.x);
-      }
-    }
-    float average = delta/25;
+/*   // Print position every 5 seconds
+  int delay_time = millis() - print_delay;
+  if (delay_time >= (2500)){ // Prints the position every 2.5 seconds
+    prev_micros = simple_position(dso32,prev_micros,1); // Position with rate info
 
-    if(Serial) {
-      Serial.print("Average: ");
-      Serial.print(average);
-      Serial.println(" m/s");
-    }
+    Serial.print("X: ");
+    Serial.print(ang_x*(180.0/PI));
+    Serial.print(" Y: ");
+    Serial.print(ang_y*(180.0/PI));
+    Serial.print(" Z ");
+    Serial.println(ang_z*(180.0/PI));
 
-    if (average>=launch_acc) {
-      launch = true;
-      launchTime = millis();
-    }
-  }
+    print_delay = millis(); // Update delay time
+  } else {
+    prev_micros = simple_position(dso32,prev_micros); // Position w/o rate info 
+  } */
 
   //RH - apogee funciton in LocalFunction.cpp
   checkApogee(dso32, MS5611, launch);
