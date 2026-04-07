@@ -1,5 +1,5 @@
 #ifndef LOCALFUNCTIONS_H
-#define LOCALFUNCIONS_H
+#define LOCALFUNCTIONS_H
 
 #include <Arduino.h>
 #include <Adafruit_LSM6DSO32.h>
@@ -20,7 +20,7 @@ extern float apogee_alt_rel;
 
 // Function to call from loop()
 void checkApogee(Adafruit_LSM6DSO32 &imu, MS5611 &baro, bool launch);
-void checkStaging(Adafruit_LSM6DSO32 &dso32, bool launch);
+void checkStaging(MS5611 &baro, Adafruit_LSM6DSO32 &dso32, bool launch);
 
 
 //AJ BEGIN

@@ -7,7 +7,7 @@ Documentation block
 03/16/26 - LT - Re-added standalone barometer read function to test I2C functionality with PCB, created a function to exclusively read the barometer and not the IMU for this testing
 03/21/26 - LT - Added function to test IMU wihout use of serial monitor by activating pyro ports depending on board orientation
 03/21/26 - LT - Added function to ignite pyro channels via the serial monitor, currently only supports a single port at a time and doesn't test for continuity
-
+04/07/26 - AJ - Changed a bunch of functions and fixed a header error.
 
 **/
 #include <Arduino.h>
@@ -28,7 +28,9 @@ Madgwick filter;
 Adafruit_LSM6DSO32 dso32;
 
 // Set I2C adress for barometer - Ignore any error here relating to "not a class name" or "not a name type"
-MS5611 MS5611(0x77);
+// BEGIN AJ - 03/19/2026
+MS5611 baro(0x77);
+// END AJ
 sensors_event_t accel;
 sensors_event_t gyro;
 sensors_event_t temp2;
@@ -57,15 +59,17 @@ long print_delay;
 // Set rate for IMU (in Hz)
 unsigned long rate = 500;
 float microsPerRead = 1000000.0/rate; // Calculated the number of mircoseconds per reading of the IMU
-
-
+// BEGIN AJ - 04/07/2026
+void checkStaging(MS5611 &baro, Adafruit_LSM6DSO32 &dso32, bool launch){};
+// END AJ
 void setup(void) {
   Serial.begin(9600);
   delay(100); // will pause Zero, Leonardo, etc until serial console opens
 
   // All sensor initializations offloaded to below function
-  sensor_init(dso32,MS5611); // Commented out for testing w/ initial PCB that doesn't have sensors
-
+  // BEGIN AJ - 04/07/2026
+  sensor_init(dso32,baro); // Commented out for testing w/ initial PCB that doesn't have sensors
+  // END AJ
   // Setup Madwick filter for IMU, eventiall move to the IMU init function
   filter.begin(500);
 
@@ -126,13 +130,16 @@ void loop() {
   int ig[3]={ig1,ig2,ig3};
   int cont[3]={cont1,cont2,cont3};
 
-  checkStaging(MS5611, dso32, launch);
-  checkStaging(MS5611, dso32, launch);
-
+  //checkStaging(MS5611, dso32, launch);
+  // BEGIN AJ - 04/07/2026
+  checkStaging(baro, dso32, launch);
+  // END AJ
   //continuity_test(2,ig,cont); // Commented out for ease of testing
 
   // Quick and dirty barometer reading code for I2C testing (moved to seperate function) **
-  //barometer_test(MS5611,0);
+  // BEGIN AJ - 04/07/2026
+  //barometer_test(baro,0);
+  // END AJ
   // ** Remove all code between asterisks once initial I2C function testing complete!
 
   // NOTE: Below code may be redundant, commented out for now but delete if confirmed redundant with testing 
