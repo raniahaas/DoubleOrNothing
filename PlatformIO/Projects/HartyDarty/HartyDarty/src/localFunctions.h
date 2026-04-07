@@ -1,5 +1,5 @@
 #ifndef LOCALFUNCTIONS_H
-#define LOCALFUNCIONS_H
+#define LOCALFUNCTIONS_H
 
 #include <Arduino.h>
 #include <Adafruit_LSM6DSO32.h>
