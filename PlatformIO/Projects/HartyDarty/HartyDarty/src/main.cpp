@@ -7,22 +7,22 @@ Documentation block
 03/16/26 - LT - Re-added standalone barometer read function to test I2C functionality with PCB, created a function to exclusively read the barometer and not the IMU for this testing
 03/21/26 - LT - Added function to test IMU wihout use of serial monitor by activating pyro ports depending on board orientation
 03/21/26 - LT - Added function to ignite pyro channels via the serial monitor, currently only supports a single port at a time and doesn't test for continuity
+04/08/26 - LT - Created new branch to test out datalogging and multithreading
 
 
 **/
 #include <Arduino.h>
 #include <Adafruit_LSM6DSO32.h>
 #include <MS5611.h>
-#include <MadgwickAHRS.h> // Madgwick filter library
 #include <test_functions.h>
 #include <globals.h> // Header file for the global variables 
 #include <orientation.h> 
+#include <LittleFS.h> // File system library
+#include <FreeRTOS.h> // Multithreading library
+#include <task.h> // Library for defining tasks that can be pinned to threads
+#include <queue.h> // Library for creating ques that send data between cores
 
-// Check that all components are up and running
-
-// Init madgwick filter
-Madgwick filter;
-
+// Check that all components are up and running ------------------------------------------------------------------
 // Init IMU
 Adafruit_LSM6DSO32 dso32;
 
@@ -32,7 +32,8 @@ sensors_event_t accel;
 sensors_event_t gyro;
 sensors_event_t temp2;
 
-// Define pins for continuity testing
+// Define pins for continuity testing ------------------------------------------------------------------
+// Note: Try to keep all definitions all caps, this helps differentiate them from regular variables!
 // NOTE! Reflects ports on final flight computer, not breadboard computer!
 #define ig1 4
 #define cont1 3
@@ -41,6 +42,35 @@ sensors_event_t temp2;
 #define ig3 2
 #define cont3 1
 
+// Define files for datalogging ------------------------------------------------------------------
+#define IMU_FILE "/IMU.csv" // File for saving IMU data, at a higher rate than baro data
+#define BARO_FILE "/BARO.csv" // File for saving barometer data
+#define EVENT_FILE "/EVENT.csv" // File for event log
+
+// Define data rates for sensors
+#define IMU_RATE 500
+#define BARO_RATE 100
+
+// Define data structures for datalogging ------------------------------------------------------------------
+typedef struct{ // Structure for IMU data that will be sent to 
+  unsigned long timestamp_us; // Timestamp in microseconds, will last up to 72 minutes before rolling over!
+  float gx, gy, gz; // Floats containing gyro values (deg/s)
+  float ax, ay, az; // Floats containing accelerometer values (m/s^2)
+} IMUdata;
+
+typedef struct{
+  unsigned long timestamp_us; // Timestamp in microseconds
+  float pressure; // Float containing pressure (in mbar)
+  float temp; // Float containing temperature (in C)
+  float altitude; // Float containing calculated altitude (in ft)
+} BAROdata;
+
+typedef struct{
+  unsigned long timestamp_us; // Timestamp in microseconds
+  char event[64]; // Actual event 
+} EVENTdata;
+
+// Define Variables ------------------------------------------------------------------
 // Define global variables for angular position - ONLY DONE IN THIS FILE!
 float ang_x = 0;
 float ang_y = 0;
@@ -50,10 +80,9 @@ float ang_z = 0;
 long prev_micros;
 long print_delay;
 
-// Set rate for IMU (in Hz)
-unsigned long rate = 500;
-float microsPerRead = 1000000.0/rate; // Calculated the number of mircoseconds per reading of the IMU
-
+// Calculate time per read for each sensor (in microseconds) ------------------------------------------------------------------
+float IMUmicrosPerRead = 1000000.0/IMU_RATE; // Microseconds per IMU read
+float BAROmicrosPerRead = 1000000.0/BARO_RATE; // Microseconds per barometer read
 
 void setup(void) {
   Serial.begin(9600);
@@ -61,9 +90,6 @@ void setup(void) {
 
   // All sensor initializations offloaded to below function
   sensor_init(dso32,MS5611); // Commented out for testing w/ initial PCB that doesn't have sensors
-
-  // Setup Madwick filter for IMU, eventiall move to the IMU init function
-  filter.begin(500);
 
   // Setup PinModes for continuity testing
   // Setting pins low for continuity testing, setting high opens MOSFETs
@@ -95,17 +121,13 @@ void setup(void) {
 
   digitalWrite(LED_BUILTIN,LOW); // Turns built-in LED off after startup 
 
-/*   // ** Starup barometer for I2C testing
-  Wire.begin();
-  if (MS5611.begin() == true){
-      Serial.println("MS5611 found.");
-  } else{
-      Serial.println("MS5611 not found. halt.");
-      while (1);
-  }
-  Serial.println();
-  MS5611.setOversampling(OSR_STANDARD);
-  // ** Remove all code between asterisks once initial I2C function testing complete! */
+  // Start file system ------------------------------------------------------------------
+  if (!LittleFS.begin(true)) {
+        Serial.println("LittleFS mount failed!");
+        while (1);
+    }
+
+    
 
   // Set first value for time variables (microseconds)
   prev_micros = micros();
@@ -114,60 +136,5 @@ void setup(void) {
 }
 
 void loop() {
-  // Prints sensor data (Commented out for now)
-  //data_print_test(dso32,MS5611,1); // Commented out for testing w/ initial PCB that doesn't have sensors
-  
-  // Tests continuity
-  // Turn the GPIO ports for ignition and continuity into integer arrays for input to function
-  int ig[3]={ig1,ig2,ig3};
-  int cont[3]={cont1,cont2,cont3};
-  //continuity_test(2,ig,cont); // Commented out for ease of testing
 
-  // Quick and dirty barometer reading code for I2C testing (moved to seperate function) **
-  //barometer_test(MS5611,0);
-  // ** Remove all code between asterisks once initial I2C function testing complete!
-
-  // NOTE: Below code may be redundant, commented out for now but delete if confirmed redundant with testing 
-/*   float zG = accel.acceleration.z;
-  float xG = accel.acceleration.x;
-  float yG = accel.acceleration.y;
-
-  float gyroX = gyro.gyro.x;
-  float gyroY = gyro.gyro.y;
-  float gyroZ = gyro.gyro.z;
-
-  dso32.getEvent(&accel, &gyro, &temp2); // Gets data from IMU */
-  // End Note!
-
-  // MOSFET IMU Test function
-  //mosfet_IMU_test(dso32,ig);
-
-  // MOSFET Serial Test function
-  pyro_serial(ig,cont); // Commented out to test global variables for angular position
-
-  // Test global variables 
-
-/*   // Print position every 5 seconds
-  int delay_time = millis() - print_delay;
-  if (delay_time >= (2500)){ // Prints the position every 2.5 seconds
-    prev_micros = simple_position(dso32,prev_micros,1); // Position with rate info
-
-    Serial.print("X: ");
-    Serial.print(ang_x*(180.0/PI));
-    Serial.print(" Y: ");
-    Serial.print(ang_y*(180.0/PI));
-    Serial.print(" Z ");
-    Serial.println(ang_z*(180.0/PI));
-
-    print_delay = millis(); // Update delay time
-  } else {
-    prev_micros = simple_position(dso32,prev_micros); // Position w/o rate info 
-  } */
-
-  // Test Madgwick filter
-  //prev_micros = madgwick_position(dso32,filter,prev_micros,rate,1);
-
-  // Test vector offset
-  //vector_disp(dso32,0); // Commented out for testing
-  //delay(10);
 }
