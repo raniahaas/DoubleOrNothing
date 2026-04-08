@@ -17,6 +17,8 @@ Documentation block
 #include <test_functions.h>
 #include <globals.h> // Header file for the global variables 
 #include <orientation.h> 
+#include <fileManagement.h>
+#include <localFunctions.h>
 
 // Check that all components are up and running
 
@@ -117,6 +119,11 @@ void loop() {
   // Prints sensor data (Commented out for now)
   //data_print_test(dso32,MS5611,1); // Commented out for testing w/ initial PCB that doesn't have sensors
   
+
+  //RH
+  firstApogeeSample = true;
+  checkApogee(dso32, MS5611);
+
   // Tests continuity
   // Turn the GPIO ports for ignition and continuity into integer arrays for input to function
   int ig[3]={ig1,ig2,ig3};
@@ -143,7 +150,7 @@ void loop() {
   //mosfet_IMU_test(dso32,ig);
 
   // MOSFET Serial Test function
-  pyro_serial(ig,cont); // Commented out to test global variables for angular position
+  //pyro_serial(ig,cont); // Commented out to test global variables for angular position
 
   // Test global variables 
 
