@@ -59,9 +59,7 @@ long print_delay;
 // Set rate for IMU (in Hz)
 unsigned long rate = 500;
 float microsPerRead = 1000000.0/rate; // Calculated the number of mircoseconds per reading of the IMU
-// BEGIN AJ - 04/07/2026
-void checkStaging(MS5611 &baro, Adafruit_LSM6DSO32 &dso32, bool launch){};
-// END AJ
+
 void setup(void) {
   Serial.begin(9600);
   delay(100); // will pause Zero, Leonardo, etc until serial console opens
