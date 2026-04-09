@@ -17,6 +17,7 @@ Documentation block
 #include <test_functions.h>
 #include <globals.h> // Header file for the global variables 
 #include <orientation.h> 
+#include <MadgwickAHRS.h>
 #include <LittleFS.h> // File system library
 #include <FreeRTOS.h> // Multithreading library
 #include <task.h> // Library for defining tasks that can be pinned to threads
@@ -51,30 +52,17 @@ sensors_event_t temp2;
 #define IMU_RATE 500
 #define BARO_RATE 100
 
-// Define data structures for datalogging ------------------------------------------------------------------
-typedef struct{ // Structure for IMU data that will be sent to 
-  unsigned long timestamp_us; // Timestamp in microseconds, will last up to 72 minutes before rolling over!
-  float gx, gy, gz; // Floats containing gyro values (deg/s)
-  float ax, ay, az; // Floats containing accelerometer values (m/s^2)
-} IMUdata;
-
-typedef struct{
-  unsigned long timestamp_us; // Timestamp in microseconds
-  float pressure; // Float containing pressure (in mbar)
-  float temp; // Float containing temperature (in C)
-  float altitude; // Float containing calculated altitude (in ft)
-} BAROdata;
-
-typedef struct{
-  unsigned long timestamp_us; // Timestamp in microseconds
-  char event[64]; // Actual event 
-} EVENTdata;
-
 // Define Variables ------------------------------------------------------------------
-// Define global variables for angular position - ONLY DONE IN THIS FILE!
+// Define global variables for angular position - ONLY DONE IN THIS FILE! - This is where these variables "live"
 float ang_x = 0;
 float ang_y = 0;
 float ang_z = 0;
+float tilt = 0;
+
+// Define global variables for current sensor readings - ONLY DONE IN THIS FILE!
+IMUdata currentIMU;
+BAROdata currentBARO;
+EVENTdata currentEVENT;
 
 // Define time variables
 long prev_micros;
@@ -83,6 +71,9 @@ long print_delay;
 // Calculate time per read for each sensor (in microseconds) ------------------------------------------------------------------
 float IMUmicrosPerRead = 1000000.0/IMU_RATE; // Microseconds per IMU read
 float BAROmicrosPerRead = 1000000.0/BARO_RATE; // Microseconds per barometer read
+
+// Debug Zone: Delete all code below (until the setup loop) this line for final code
+int pos_ind = 0; // Counter variable for position detection testing
 
 void setup(void) {
   Serial.begin(9600);
@@ -127,14 +118,42 @@ void setup(void) {
         while (1);
     }
 
-    
+  // Update angular position to starting tilt ------------------------------------------------------------------
+  delay(1000); // Delay to measure angle at startup
+  gravity_cal(dso32); // Function uses gravity vector to determine starting angle on pad
+  Serial.print("Offset X:");
+  Serial.print(ang_x);
+  Serial.print(" Offset Y:");
+  Serial.println(ang_y);
 
   // Set first value for time variables (microseconds)
   prev_micros = micros();
+  currentIMU.timestamp_us = micros();
   // Set value for print delay
   print_delay = millis();
 }
 
 void loop() {
+  // IMU Update test
+  IMU_update(dso32,currentIMU.timestamp_us);
+
+  if (pos_ind >= 20){
+    Serial.print("x:");
+    Serial.print(currentIMU.ax);
+    Serial.print(" y:");
+    Serial.print(currentIMU.ay);
+    Serial.print(" z:");
+    Serial.println(currentIMU.az);
+
+    Serial.print("posX:");
+    Serial.print(ang_x);
+    Serial.print(" posY:");
+    Serial.print(ang_y);
+    Serial.print(" tilt:");
+    Serial.println(tilt);
+    pos_ind = 0;
+  } else{
+    pos_ind += 1; // Incriments if not high enough
+  }
 
 }

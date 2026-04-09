@@ -104,7 +104,7 @@ void vector_disp (Adafruit_LSM6DSO32& IMU, unsigned long mode = 1){
     float yOff = atan2((-ax),sqrt((ay*ay) + (az*az))); // Pitch (rad)
 
     // Calculate the overall tilt angle from the +Z axis
-    float tilt = acos(cos(xOff)*cos(yOff)); // Don't still fully understand why this works, but it seems to be accurate
+    float tilt = acos(cos(xOff)*cos(yOff)); // Don't still fully understand why this works, has something to do with rotation matrixes, but it seems to be accurate
 
     // Print
     Serial.print("X: ");
@@ -118,3 +118,61 @@ void vector_disp (Adafruit_LSM6DSO32& IMU, unsigned long mode = 1){
 // Calibrate Gravity - Calibrates the global variables for angle by using a gravity vector
 // Note: This function will not work during flight, it only works while stationary on the ground, like when sitting on the pad
 // 
+void gravity_cal(Adafruit_LSM6DSO32& IMU, int mode = 0){
+    // Get IMU data
+    sensors_event_t accel;
+    sensors_event_t gyro;
+    sensors_event_t temp;
+    IMU.getEvent(&accel, &gyro, &temp);
+
+    // Get float values for acceleration
+    float ax = accel.acceleration.x;
+    float ay = accel.acceleration.y;
+    float az = accel.acceleration.z;
+
+    // Calculate offset (angle determined by using accelerometer vectors only)
+    float xOff = atan2(ay,az); // Roll (rad)
+    float yOff = atan2((-ax),sqrt((ay*ay) + (az*az))); // Pitch (rad)
+
+    // Convert rad to degrees
+    xOff = xOff*(180.0/PI);
+    yOff = yOff*(180.0/PI);
+
+    // Update globals for angular position
+    ang_x = xOff;
+    ang_y = yOff;
+}
+
+// IMU Update Function - Updates global variables for IMU read while also updating global position and tilt via integration
+//
+void IMU_update(Adafruit_LSM6DSO32& IMU, long prev_time){
+    // Get new data from sensors
+    sensors_event_t accel;
+    sensors_event_t gyro;
+    sensors_event_t temp;
+    IMU.getEvent(&accel, &gyro, &temp);
+
+    // Save IMU readings
+    // Gyro readings are in rad/s
+    currentIMU.gx = gyro.gyro.x;
+    currentIMU.gy = gyro.gyro.y;
+    currentIMU.gz = gyro.gyro.z;
+    // Accel readings are in m/s^2
+    currentIMU.ax = accel.acceleration.x;
+    currentIMU.ay = accel.acceleration.y;
+    currentIMU.az = accel.acceleration.z;
+
+    // Save timestamp
+    currentIMU.timestamp_us = micros();
+
+    // Calculate change in time between last read (delta t)
+    float dt = (currentIMU.timestamp_us - prev_time) / 1000000.0; // Divide by 1 million to convert into seconds
+
+    // Update global position variables - Convert to degrees from radians
+    ang_x += (currentIMU.gx*dt)*(180.0/PI);
+    ang_y += (currentIMU.gy*dt)*(180.0/PI);
+    ang_z += (currentIMU.gz*dt)*(180.0/PI);
+
+    // Update global tilt variable
+    tilt = acos(cos(ang_x*(PI/180.0))*cos(ang_y*(PI/180.0)))*(180.0/PI); // Don't still fully understand why this works, has something to do with rotation matrixes, but it seems to be accurate
+}
