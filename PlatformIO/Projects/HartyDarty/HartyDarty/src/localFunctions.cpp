@@ -10,6 +10,7 @@ const float gyroMax = 20.0;
 static bool gyroMaxed = false;
 static float prevAlt = 0;
 static int descentCount = 0;
+float apogeeTime = 0;
 
 
 
@@ -34,53 +35,46 @@ void checkApogee(Adafruit_LSM6DSO32 &imu, MS5611 &baro) {
 
     //read sensor values
     sensors_event_t accel, gyro, temp2;
-    //commment out for testing purposes
-    // imu.getEvent(&accel, &gyro, &temp2);
-    // baro.read();
+    //COMMENT out for testing purposes
+    imu.getEvent(&accel, &gyro, &temp2);
+    baro.read();
     float altitude = baro.getAltitude();
 
-    //testing data
-    
 
-    // float pressure = baro.getPressure();
-    //float seaLevelAltitude = 44330.0 * (1.0 - pow(pressure / 1013.25, 0.1903));
-    // float pyrolog = seaLevelAltitude - 226.2;   //Convert to reative level; this is CI in metres
+    float pressure = baro.getPressure();
+    float seaLevelAltitude = 44330.0 * (1.0 - pow(pressure / 1013.25, 0.1903));
+    float pyrolog = seaLevelAltitude - 226.2;   //Convert to reative level; this is CI in metres
 
-    // float gx = gyro.gyro.x;
-    // float gy = gyro.gyro.y;
-    // float gz = gyro.gyro.z;
+    float gx = gyro.gyro.x;
+    float gy = gyro.gyro.y;
+    float gz = gyro.gyro.z;
 
-
-    float gx = 0, gy = 0, gz = 0;
-    float gyrolog;
-    float pyrolog;
     //euclidean norm eq to determine with gyro
-    //float gyrolog = sqrt(gx*gx + gy*gy + gz*gz);
+    float gyrolog = sqrt(gx*gx + gy*gy + gz*gz);
 
-    // Simulate a flight profile
-    // Simulate a flight profile
-    static int t = 0;
-    t += 1;
-    Serial.print("t = ");
-    Serial.println(t);
 
+    //BEGIN testing data
+    // static int t = 0;
+    // t += 1;
+    // Serial.print("t = ");
+    // Serial.println(t);
 
     // 1. Boost phase (gyro rising)
-    if (t < 20) {
-        gyrolog = t * 2;          // rising gyro
-        pyrolog = t * 5;          // rising altitude
-    }
-    // 2. Coast (gyro falling)
-    else if (t < 40) {
-        gyrolog = 40 - (t - 20);  // clean fall from 40 → 0
-        pyrolog = 100;            // flat altitude at peak
-    }
-    // 3. Apogee + descent
-    else {
-        gyrolog = 0;
-        pyrolog = 100 - (t - 40); // descending altitude
-    }
-
+    // if (t < 20) {
+    //     gyrolog = t * 2;          // rising gyro
+    //     pyrolog = t * 5;          // rising altitude
+    // }
+    // // 2. Coast (gyro falling)
+    // else if (t < 40) {
+    //     gyrolog = 40 - (t - 20);  // clean fall from 40 → 0
+    //     pyrolog = 100;            // flat altitude at peak
+    // }
+    // // 3. Apogee + descent
+    // else {
+    //     gyrolog = 0;
+    //     pyrolog = 100 - (t - 40); // descending altitude
+    // }
+    //END
 
 
     if (firstApogeeSample) {
@@ -105,6 +99,7 @@ void checkApogee(Adafruit_LSM6DSO32 &imu, MS5611 &baro) {
         if (pyrolog < pyroPrev - noiseThreshold) {
             descentCount++;
             Serial.printf("Apogee Function logging descending altitude values. Sample %d\n", descentCount);
+            apogeeTime = millis();
         } else {
             if (descentCount > 0) {
                 Serial.println("Apogee Function error logging descent. Resetting values.\n");
@@ -118,6 +113,9 @@ void checkApogee(Adafruit_LSM6DSO32 &imu, MS5611 &baro) {
         Serial.println("Apogee Detected");
         Serial.printf("Gyro data: X=%.5f, Y=%.5f, Z=%.5f\n", gx, gy, gz);
         Serial.printf("Gyro magnitude: %.5f\n", gyrolog);
+        //UNCOMMENT BEFORE FLIGHT
+        //float timeTillApogee = apogeeTime - launchTime;
+        //Serial.printf("Time till apogee: %d", apogeeTime);
         //Serial.printf("Altitude data: %.5f m\n", seaLevelAltitude);
         Serial.printf("Altitude relative to Ci: %.5f m\n", pyrolog);
 
@@ -129,46 +127,11 @@ void checkApogee(Adafruit_LSM6DSO32 &imu, MS5611 &baro) {
 
         apogee_gyroMag = gyrolog;
 
-        //apogee_alt_raw = seaLevelAltitude;
+        apogee_alt_raw = seaLevelAltitude;
         apogee_alt_rel = pyrolog;
 
         Serial.print("Apogee Function would now be deploying Pyro");
     }
-
-    //skip first
-    // if (firstApogeeSample) {
-    //     gyroPrev = gyrolog;
-    //     pyroPrev = pyrolog;
-    //     firstApogeeSample = false;
-    // }
-    // else {
-    //     //apogee = gyro peaks & the altitude drops
-    //     if (!p) {
-    //         if ((gyroPrev > gyrolog) && (pyroPrev > pyrolog)) {
-    //             //print into serial monitor
-    //             Serial.println("Apogee Detected");
-    //             Serial.printf("Gyro data: X=%.5f, Y=%.5f, Z=%.5f\n", gx, gy, gz);
-    //             Serial.printf("Gyro magnitude: %.5f\n", gyrolog);
-    //             Serial.printf("Altitude data: %.5f m\n", seaLevelAltitude);
-    //             Serial.printf("Altitude relative to Ci: %.5f m\n", pyrolog);
-
-    //             //update values to write into csv file
-    //             apogeeDetected = true;
-
-    //             apogee_gx = gx;
-    //             apogee_gy = gy;
-    //             apogee_gz = gz;
-
-    //             apogee_gyroMag = gyrolog;
-
-    //             apogee_alt_raw = seaLevelAltitude;
-    //             apogee_alt_rel = pyrolog;
-
-    //             p = true;
-    //         }
-    //     }
-        
-    // }
 
     //update previous values
     gyroPrev = gyrolog;
