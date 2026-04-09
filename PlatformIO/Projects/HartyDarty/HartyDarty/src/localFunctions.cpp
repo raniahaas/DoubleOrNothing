@@ -89,14 +89,16 @@ bool launch = false;
 
 
 // thresholds (i will tune these)
-float burnout_acc_threshold = 5.0; // m/s^2, potentially change to g's, but for now just testing with m/s^2. This is the acceleration threshold for burnout detection, which is when the acceleration drops significantly after launch. We can tune this value based on expected acceleration profiles of the rocket. A value of 5 m/s^2 means that if the average acceleration drops below 5 m/s^2, we might be in burnout.
-float burnout_delta_threshold = -2.0; // sudden drop
+float burnout_acc_threshold = 5.0f * 9.80665f;   // ≈ 14.71 m/s^2hold = 5.0; // m/s^2, potentially change to g's, but for now just testing with m/s^2. This is the acceleration threshold for burnout detection, which is when the acceleration drops significantly after launch. We can tune this value based on expected acceleration profiles of the rocket. A value of 5 m/s^2 means that if the average acceleration drops below 5 m/s^2, we might be in burnout.
+float burnout_delta_threshold = -3.0f; // sudden drop
 
 float staging_buffer[25];
 
 // for delta method
 float prevAccel = 0; 
 float launchTime = 0;
+int i = 0;
+int j = 0;
 
 // END AJ
 
@@ -134,9 +136,11 @@ void checkStaging(MS5611 &baro, Adafruit_LSM6DSO32 &dso32) {
     // Ensure launch event print is also available here (keeps event prints within lines 398-435)
     if (launch) {
       if (Serial) {
-        Serial.println("Event: Launch detected");
-        Serial.print("LaunchTime (ms): ");
-        Serial.println(launchTime);
+        if (i == 0) {
+          Serial.println("Event: Launch detected");
+          Serial.print("LaunchTime (ms): ");
+          Serial.println(launchTime);
+          i++;}
       }
     }
 
@@ -149,9 +153,11 @@ void checkStaging(MS5611 &baro, Adafruit_LSM6DSO32 &dso32) {
         staged = true;
         stagingTime = millis();
         if (Serial) {
+          if (j == 0) {
           Serial.println("Event: Staging detected");
           Serial.print("StagingTime (ms): ");
           Serial.println(stagingTime);
+          j++;}
         }
     }
     prevAccel = average;
