@@ -21,9 +21,13 @@ void Flight(Adafruit_LSM6DSO32) {
 }
 
 void checkApogee(Adafruit_LSM6DSO32 &imu, MS5611 &baro) {
-
+    delay(500);
     // Serial.print("firstApogeeSample = ");
     // Serial.println(firstApogeeSample ? "TRUE" : "FALSE");
+
+    // Serial.print("ADDR check = ");
+    // Serial.println((uintptr_t)&firstApogeeSample, HEX);
+
 
     if (apogeeDetected)
         return;
@@ -54,26 +58,29 @@ void checkApogee(Adafruit_LSM6DSO32 &imu, MS5611 &baro) {
     //float gyrolog = sqrt(gx*gx + gy*gy + gz*gz);
 
     // Simulate a flight profile
+    // Simulate a flight profile
     static int t = 0;
-    t+=5;
+    t += 1;
+    Serial.print("t = ");
+    Serial.println(t);
 
-    
 
     // 1. Boost phase (gyro rising)
     if (t < 20) {
-        gyrolog = t * 2;      // rising gyro
-        pyrolog = t * 5;      // rising altitude
+        gyrolog = t * 2;          // rising gyro
+        pyrolog = t * 5;          // rising altitude
     }
     // 2. Coast (gyro falling)
     else if (t < 40) {
-        gyrolog = 40 - (t-20);     // falling gyro
-        pyrolog = 100 + (20-(t-20));  // still rising altitude
+        gyrolog = 40 - (t - 20);  // clean fall from 40 → 0
+        pyrolog = 100;            // flat altitude at peak
     }
     // 3. Apogee + descent
     else {
         gyrolog = 0;
-        pyrolog = 100 - (t - 40);  // descending altitude
+        pyrolog = 100 - (t - 40); // descending altitude
     }
+
 
 
     if (firstApogeeSample) {
@@ -99,7 +106,7 @@ void checkApogee(Adafruit_LSM6DSO32 &imu, MS5611 &baro) {
             descentCount++;
             Serial.printf("Apogee Function logging descending altitude values. Sample %d\n", descentCount);
         } else {
-            if (decentCount > 0) {
+            if (descentCount > 0) {
                 Serial.println("Apogee Function error logging descent. Resetting values.\n");
             }
             descentCount = 0;

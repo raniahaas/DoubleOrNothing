@@ -60,6 +60,9 @@ float microsPerRead = 1000000.0/rate; // Calculated the number of mircoseconds p
 void setup(void) {
   Serial.begin(9600);
   delay(100); // will pause Zero, Leonardo, etc until serial console opens
+  firstApogeeSample = true; 
+  //RH 4/8/26
+
 
   // All sensor initializations offloaded to below function
   sensor_init(dso32,MS5611); // Commented out for testing w/ initial PCB that doesn't have sensors
@@ -113,16 +116,24 @@ void setup(void) {
   prev_micros = micros();
   // Set value for print delay
   print_delay = millis();
+
+  Serial.print("ADDR setup = ");
+  Serial.println((uintptr_t)&firstApogeeSample, HEX);
+
 }
 
 void loop() {
   // Prints sensor data (Commented out for now)
   //data_print_test(dso32,MS5611,1); // Commented out for testing w/ initial PCB that doesn't have sensors
-  
+  delay(50);
 
   //RH
-  firstApogeeSample = true;
+  //Serial.printf("print apogee valuue %d\n", firstApogeeSample);
   checkApogee(dso32, MS5611);
+
+  // Serial.print("ADDR loop = ");
+  // Serial.println((uintptr_t)&firstApogeeSample, HEX);
+
 
   // Tests continuity
   // Turn the GPIO ports for ignition and continuity into integer arrays for input to function
