@@ -85,7 +85,9 @@ void checkApogee(Adafruit_LSM6DSO32 &imu, MS5611 &baro, bool launch) {
 // Staging detection
 bool staged = false;
 float stagingTime = 0;
+float burnoutTime = 0;
 bool launch = false;
+bool burnout = false;
 
 
 // thresholds (i will tune these)
@@ -108,59 +110,91 @@ void checkStaging(MS5611 &baro, Adafruit_LSM6DSO32 &dso32) {
     sensors_event_t accel, gyro, temp2;
     dso32.getEvent(&accel, &gyro, &temp2);
     baro.read();
-    if(accel.acceleration.x > 1.0 && !launch){ // crude launch detection, just to start staging detection code. Will replace with more robust method later
-        launchTime = millis();
-      launch = true;
-    }
-  
+    float accelMag = sqrt(accel.acceleration.x * accel.acceleration.x +
+                      accel.acceleration.y * accel.acceleration.y +
+                      accel.acceleration.z * accel.acceleration.z);
+
     // Staging detection
-  static bool prevAccelInit = false;
-  if(launch && !staged){
-    float delta = 0.0f;
-    for (int z=0; z<25; z++){
-      dso32.getEvent(&accel, &gyro, &temp2);
-
-      staging_buffer[z] = accel.acceleration.x; // why is it not acceleration.z? idk, just testing with x for now
-
-      delta += staging_buffer[z];
-      // optional: delay(2); // add spacing if you want a time window
-    }
-    float average = delta/25.0f;
-
-    if(Serial) {
-      Serial.print("Average: ");
-      Serial.print(average);
-      Serial.println(" m/s^2");
-    }
-
-    // Ensure launch event print is also available here (keeps event prints within lines 398-435)
-    if (launch) {
-      if (Serial) {
-        if (i == 0) {
-          Serial.println("Event: Launch detected");
-          Serial.print("LaunchTime (ms): ");
-          Serial.println(launchTime);
-          i++;}
-      }
-    }
-
-    if (!prevAccelInit) {
-      prevAccel = average;
-      prevAccelInit = true;
-    }else{
-      // Trigger if absolute low accel OR sudden drop compared to previous average
-      if (average <= burnout_acc_threshold || (average - prevAccel) <= burnout_delta_threshold) {
-        staged = true;
-        stagingTime = millis();
-        if (Serial) {
-          if (j == 0) {
-          Serial.println("Event: Staging detected");
-          Serial.print("StagingTime (ms): ");
-          Serial.println(stagingTime);
-          j++;}
+    static bool prevAccelInit = false;
+    //RH - set to 5Gs
+    float launchThreshold = 5.1f * 9.80665f;
+        if (!launch && accelMag > launchThreshold) {
+            launch = true;
+            launchTime = millis();
         }
-    }
-    prevAccel = average;
+
+    //END RH
+    if(launch && !staged){
+        float delta = 0.0f;
+        for (int z=0; z<25; z++){
+        dso32.getEvent(&accel, &gyro, &temp2);
+
+        staging_buffer[z] = accel.acceleration.z; // why is it not acceleration.z? idk, just testing with x for now
+
+        delta += staging_buffer[z];
+        // optional: delay(2); // add spacing if you want a time window
+        }
+        float average = delta/25.0f;
+
+        if(Serial) {
+            Serial.print("Average: ");
+            Serial.print(average);
+            Serial.println(" m/s^2");
+        }
+
+
+        // Ensure launch event print is also available here (keeps event prints within lines 398-435)
+        if (launch) {
+            if (Serial) {
+                if (i == 0) {
+                Serial.println("Event: Launch detected");
+                Serial.print("LaunchTime (ms): ");
+                Serial.println(launchTime);
+                i++;}
+            }
+        }
+        //RH - modifications to G threshold
+
+        if(!launch)
+            return;
+
+        if (accelMag < (5.5f * 9.80665f)) {
+            firstApogeeSample = true;
+            return;
+        }
+
+        //include burnout staging detection
+        if (!burnout) {
+            if (average <= burnout_acc_threshold ||
+                (average - prevAccel) <= burnout_delta_threshold) {
+                burnoutTime = millis();
+                burnout = true;
+                Serial.println("Burnout detected");
+                Serial.print("Burnout (ms): ");
+                Serial.println(burnoutTime);
+            }
+        }
+
+        //END RH
+
+        if (!prevAccelInit) {
+        prevAccel = average;
+        prevAccelInit = true;
+        }else{
+        // Trigger if absolute low accel OR sudden drop compared to previous average
+        if (burnout && !staged) {
+            float ignitionThreshold = 3.0f * 9.80665f;
+            staged = true;
+            stagingTime = millis();
+            if (Serial) {
+            if (j == 0) {
+            Serial.println("Event: Staging detected");
+            Serial.print("StagingTime (ms): ");
+            Serial.println(stagingTime);
+            j++;}
+            }
+        }
+        prevAccel = average;
     }
   }
   // END AJ
