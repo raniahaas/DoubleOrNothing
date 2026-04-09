@@ -85,6 +85,8 @@ void checkApogee(Adafruit_LSM6DSO32 &imu, MS5611 &baro, bool launch) {
 // Staging detection
 bool staged = false;
 float stagingTime = 0;
+bool launch = false;
+
 
 // thresholds (i will tune these)
 float burnout_acc_threshold = 5.0; // m/s^2, potentially change to g's, but for now just testing with m/s^2. This is the acceleration threshold for burnout detection, which is when the acceleration drops significantly after launch. We can tune this value based on expected acceleration profiles of the rocket. A value of 5 m/s^2 means that if the average acceleration drops below 5 m/s^2, we might be in burnout.
@@ -99,11 +101,15 @@ float launchTime = 0;
 // END AJ
 
 // BEGIN AJ - 03/19/2026
-void checkStaging(MS5611 &baro, Adafruit_LSM6DSO32 &dso32, bool launch) {
+void checkStaging(MS5611 &baro, Adafruit_LSM6DSO32 &dso32) {
     //read sensor values
     sensors_event_t accel, gyro, temp2;
     dso32.getEvent(&accel, &gyro, &temp2);
     baro.read();
+    if(accel.acceleration.x > 1.0 && !launch){ // crude launch detection, just to start staging detection code. Will replace with more robust method later
+        launchTime = millis();
+      launch = true;
+    }
   
     // Staging detection
   static bool prevAccelInit = false;

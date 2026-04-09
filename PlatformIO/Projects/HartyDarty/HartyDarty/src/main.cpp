@@ -36,7 +36,6 @@ sensors_event_t gyro;
 sensors_event_t temp2;
 
 //Universal variables from location functions
-bool launch = false;
 
 // Define pins for continuity testing
 // NOTE! Reflects ports on final flight computer, not breadboard computer!
@@ -61,7 +60,14 @@ unsigned long rate = 500;
 float microsPerRead = 1000000.0/rate; // Calculated the number of mircoseconds per reading of the IMU
 
 void setup(void) {
-  Serial.begin(9600);
+  Serial.begin(115200);
+
+  // Wait briefly for Serial connection (non-blocking). On some boards
+  // `while(!Serial)` can block forever; use a short timeout instead.
+  unsigned long serial_start = millis();
+  while (!Serial && (millis() - serial_start) < 2000) {
+    delay(10);
+  }
   delay(100); // will pause Zero, Leonardo, etc until serial console opens
 
   // All sensor initializations offloaded to below function
@@ -130,7 +136,8 @@ void loop() {
 
   //checkStaging(MS5611, dso32, launch);
   // BEGIN AJ - 04/07/2026
-  checkStaging(baro, dso32, launch);
+  checkStaging(baro, dso32);
+  delay(20);
   // END AJ
   //continuity_test(2,ig,cont); // Commented out for ease of testing
 
@@ -156,7 +163,7 @@ void loop() {
   //mosfet_IMU_test(dso32,ig);
 
   // MOSFET Serial Test function
-  pyro_serial(ig,cont); // Commented out to test global variables for angular position
+  //pyro_serial(ig,cont); // Commented out to test global variables for angular position
 
   // Test global variables 
 

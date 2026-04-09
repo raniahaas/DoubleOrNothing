@@ -20,7 +20,7 @@ extern float apogee_alt_rel;
 
 // Function to call from loop()
 void checkApogee(Adafruit_LSM6DSO32 &imu, MS5611 &baro, bool launch);
-void checkStaging(MS5611 &baro, Adafruit_LSM6DSO32 &dso32, bool launch);
+void checkStaging(MS5611 &baro, Adafruit_LSM6DSO32 &dso32);
 
 
 //AJ BEGIN
