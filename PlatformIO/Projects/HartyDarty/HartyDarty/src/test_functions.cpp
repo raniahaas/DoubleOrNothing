@@ -268,7 +268,7 @@ void sensor_init(Adafruit_LSM6DSO32& IMU, MS5611& BARO){
         break; // unsupported range for the DSO32
     }
 
-    IMU.setAccelDataRate(LSM6DS_RATE_833_HZ); // Updated to be 833 Hz rather than 208 Hz previously used
+    IMU.setAccelDataRate(LSM6DS_RATE_833_HZ); // Updated to be 833 Hz rather than 208 Hz previously used, REMEMBER TO UPDATE GYRO RATE BELOW AS WELL
     Serial.print("Accelerometer data rate set to: ");
     switch (IMU.getAccelDataRate()) {
     case LSM6DS_RATE_SHUTDOWN:
@@ -306,7 +306,7 @@ void sensor_init(Adafruit_LSM6DSO32& IMU, MS5611& BARO){
         break;
     }
 
-    IMU.setGyroDataRate(LSM6DS_RATE_208_HZ); 
+    IMU.setGyroDataRate(LSM6DS_RATE_833_HZ); 
     Serial.print("Gyro data rate set to: ");
     switch (IMU.getGyroDataRate()) {
     case LSM6DS_RATE_SHUTDOWN:

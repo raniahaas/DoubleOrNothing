@@ -76,7 +76,7 @@ float BAROmicrosPerRead = 1000000.0/BARO_RATE; // Microseconds per barometer rea
 int pos_ind = 0; // Counter variable for position detection testing
 
 void setup(void) {
-  Serial.begin(9600);
+  Serial.begin(115200);
   delay(100); // will pause Zero, Leonardo, etc until serial console opens
 
   // All sensor initializations offloaded to below function
@@ -129,13 +129,15 @@ void setup(void) {
   // Set first value for time variables (microseconds)
   prev_micros = micros();
   currentIMU.timestamp_us = micros();
+  currentBARO.timestamp_us = micros();
   // Set value for print delay
   print_delay = millis();
 }
 
 void loop() {
   // IMU Update test
-  IMU_update(dso32,currentIMU.timestamp_us);
+  IMU_update(dso32,currentIMU.timestamp_us); // Call this function to update IMU data, also updates angular position and tilt at the same time!
+  BARO_update(MS5611,currentBARO.timestamp_us);
 
   if (pos_ind >= 20){
     Serial.print("x:");
@@ -151,6 +153,14 @@ void loop() {
     Serial.print(ang_y);
     Serial.print(" tilt:");
     Serial.println(tilt);
+
+    Serial.print("temp:");
+    Serial.print(currentBARO.temp);
+    Serial.print(" press:");
+    Serial.print(currentBARO.pressure);
+    Serial.print(" alt:");
+    Serial.println(currentBARO.altitude);
+
     pos_ind = 0;
   } else{
     pos_ind += 1; // Incriments if not high enough
