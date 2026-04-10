@@ -2,7 +2,7 @@
 
 //declarations from main
 //RH - 4/7
-const float noiseThreshold = 0.5;
+const float noiseThreshold = 2.0;
 const int decentCount = 5;
 const float gyroMax = 20.0;
 
@@ -12,7 +12,8 @@ static int descentCount = 0;
 float apogeeTime = 0;
 
 void checkApogee(Adafruit_LSM6DSO32 &imu, MS5611 &baro) {
-    delay(500);
+    
+
     // Serial.print("firstApogeeSample = ");
     // Serial.println(firstApogeeSample ? "TRUE" : "FALSE");
 
@@ -41,6 +42,10 @@ void checkApogee(Adafruit_LSM6DSO32 &imu, MS5611 &baro) {
 
     //euclidean norm eq to determine with gyro
     float gyrolog = sqrt(gx*gx + gy*gy + gz*gz);
+
+    if (pyrolog < 20) {   // must be at least 20 m above pad
+        return;
+    }
 
 
     //BEGIN testing data
@@ -104,9 +109,9 @@ void checkApogee(Adafruit_LSM6DSO32 &imu, MS5611 &baro) {
         Serial.printf("Gyro data: X=%.5f, Y=%.5f, Z=%.5f\n", gx, gy, gz);
         Serial.printf("Gyro magnitude: %.5f\n", gyrolog);
         //UNCOMMENT BEFORE FLIGHT
-        //float timeTillApogee = apogeeTime - launchTime;
-        //Serial.printf("Time till apogee: %d", apogeeTime);
-        //Serial.printf("Altitude data: %.5f m\n", seaLevelAltitude);
+        float timeTillApogee = apogeeTime - launchTime;
+        Serial.printf("Time till apogee: %d", apogeeTime);
+        Serial.printf("Altitude data: %.5f m\n", seaLevelAltitude);
         Serial.printf("Altitude relative to Ci: %.5f m\n", pyrolog);
 
         apogeeDetected = true;
@@ -183,12 +188,6 @@ void checkStaging(MS5611 &baro, Adafruit_LSM6DSO32 &dso32) {
         }
         float average = delta/25.0f;
 
-        if(Serial) {
-            Serial.print("Average: ");
-            Serial.print(average);
-            Serial.println(" m/s^2");
-        }
-
 
         // Ensure launch event print is also available here (keeps event prints within lines 398-435)
         if (launch) {
@@ -205,10 +204,12 @@ void checkStaging(MS5611 &baro, Adafruit_LSM6DSO32 &dso32) {
         if(!launch)
             return;
 
-        if (accelMag < (5.5f * 9.80665f)) {
+        if (launch && burnout && !firstApogeeSample) {
             firstApogeeSample = true;
+            Serial.println("Apogee sampling armed.");
             return;
         }
+
 
         //include burnout staging detection
         if (!burnout) {

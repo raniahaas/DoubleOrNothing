@@ -164,10 +164,11 @@ void loop() {
 
   // BEGIN AJ - 04/07/2026
   checkStaging(baro, dso32);
-    //BEGIN RH - 04/09/2206
-    checkApogee(dso32, baro);
-    //END RH
-    delay(20);
+  //BEGIN RH - 04/09/2206
+  delay(50);
+  checkApogee(dso32, baro);
+  //END RH
+  //delay(20);
   // END AJ
 
   
