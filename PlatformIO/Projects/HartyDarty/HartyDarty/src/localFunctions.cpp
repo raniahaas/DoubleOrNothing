@@ -1,4 +1,8 @@
 #include "localFunctions.h"
+#include <Adafruit_LSM6DSO32.h>
+#include <MS5611.h>
+#include <LittleFS.h> 
+#include "FS.h"         
 
 //declarations from main
 //RH - 4/7
@@ -10,6 +14,40 @@ static bool gyroMaxed = false;
 static float prevAlt = 0;
 static int descentCount = 0;
 float apogeeTime = 0;
+
+void logToCSV(const String &row) {
+    File file = LittleFS.open("/data.csv", "a");
+    if (file) {
+        file.println(row);
+        file.close();
+    }
+}
+
+void IMU_update(Adafruit_LSM6DSO32 &imu, unsigned long timestamp) {
+    imu.getEvent(&accel, &gyro, &temp2);
+
+    // Update BARO values here so IMU rows contain real data
+    currentBARO.temp = baro.getTemperature();
+    currentBARO.pressure = baro.getPressure();
+    currentBARO.alt = baro.getAltitude();
+    currentBARO.relAlt = currentBARO.alt - 226.2; // pad altitude
+
+    String row = String(timestamp) + "," +
+                 String(currentBARO.temp) + "," +
+                 String(currentBARO.pressure) + "," +
+                 String(accel.acceleration.x) + "," +
+                 String(accel.acceleration.y) + "," +
+                 String(accel.acceleration.z) + "," +
+                 String(gyro.gyro.x) + "," +
+                 String(gyro.gyro.y) + "," +
+                 String(gyro.gyro.z) + "," +
+                 String(currentBARO.alt) + "," +
+                 String(currentBARO.relAlt) + "," +
+                 "NONE,0";
+
+    logToCSV(row);
+}
+
 
 void checkApogee(Adafruit_LSM6DSO32 &imu, MS5611 &baro) {
     
@@ -103,16 +141,46 @@ void checkApogee(Adafruit_LSM6DSO32 &imu, MS5611 &baro) {
         }
     }
 
-    //need three samples of descent to confirm
-    if (descentCount >=3) {
+        if (descentCount >= 3 && !apogeeDetected) {
+
+        apogeeDetected = true;
+        apogeeTime = millis();
+
         Serial.println("Apogee Detected");
-        Serial.printf("Gyro data: X=%.5f, Y=%.5f, Z=%.5f\n", gx, gy, gz);
-        Serial.printf("Gyro magnitude: %.5f\n", gyrolog);
-        //UNCOMMENT BEFORE FLIGHT
-        float timeTillApogee = apogeeTime - launchTime;
-        Serial.printf("Time till apogee: %d", apogeeTime);
-        Serial.printf("Altitude data: %.5f m\n", seaLevelAltitude);
-        Serial.printf("Altitude relative to Ci: %.5f m\n", pyrolog);
+
+        // Save apogee data
+        apogee_gx = gx;
+        apogee_gy = gy;
+        apogee_gz = gz;
+        apogee_gyroMag = gyrolog;
+        apogee_alt_raw = seaLevelAltitude;
+        apogee_alt_rel = pyrolog;
+
+        // Log to CSV
+        if (descentCount >= 3 && !apogeeDetected) {
+
+        apogeeDetected = true;
+
+        apogee_gx = gx;
+        apogee_gy = gy;
+        apogee_gz = gz;
+        apogee_gyroMag = gyroMag;
+        apogee_alt_raw = altitude;
+        apogee_alt_rel = relAlt;
+
+        File file = LittleFS.open("/data.csv", "a");
+        if (file) {
+            file.printf(",,,,,,,,,,,%s,%lu\n", "APOGEE", apogeeTime);
+            file.printf(",,,,,,,,,,gyroMag,%.5f\n", apogee_gyroMag);
+            file.printf(",,,,,,,,,,altRaw,%.5f\n", apogee_alt_raw);
+            file.printf(",,,,,,,,,,altRel,%.5f\n", apogee_alt_rel);
+            file.close();
+        }
+
+        Serial.println("Apogee logged to CSV");
+    }
+        gyroPrev = gyroMag;
+        pyroPrev = relAlt;
 
         apogeeDetected = true;
 
@@ -162,6 +230,7 @@ void checkStaging(MS5611 &baro, Adafruit_LSM6DSO32 &dso32) {
     sensors_event_t accel, gyro, temp2;
     dso32.getEvent(&accel, &gyro, &temp2);
     baro.read();
+    
     float accelMag = sqrt(accel.acceleration.x * accel.acceleration.x +
                       accel.acceleration.y * accel.acceleration.y +
                       accel.acceleration.z * accel.acceleration.z);
@@ -187,6 +256,19 @@ void checkStaging(MS5611 &baro, Adafruit_LSM6DSO32 &dso32) {
         // optional: delay(2); // add spacing if you want a time window
         }
         float average = delta/25.0f;
+
+        if (!burnout && (accelMag <= burnout_acc_threshold || delta <= burnout_delta_threshold)) {
+            burnout = true;
+            burnoutTime = millis();
+
+            File file = LittleFS.open("/data.csv", "a");
+            if (file) {
+                file.printf(",,,,,,,,,,,%s,%lu\n", "BURNOUT", burnoutTime);
+                file.close();
+            }
+
+            Serial.println("Burnout logged to CSV");
+        }
 
 
         // Ensure launch event print is also available here (keeps event prints within lines 398-435)
@@ -223,7 +305,6 @@ void checkStaging(MS5611 &baro, Adafruit_LSM6DSO32 &dso32) {
             }
         }
 
-        //END RH
 
         if (!prevAccelInit) {
         prevAccel = average;
@@ -243,7 +324,23 @@ void checkStaging(MS5611 &baro, Adafruit_LSM6DSO32 &dso32) {
             }
         }
         prevAccel = average;
+        //BEGIN RH
+        if (!staged && burnout) {
+            staged = true;
+            stagingTime = millis();
+
+            File file = LittleFS.open("/data.csv", "a");
+            if (file) {
+                file.printf(",,,,,,,,,,,%s,%lu\n", "STAGING", stagingTime);
+                file.close();
+            }
+
+            Serial.println("Staging logged to CSV");
+        }
+
+        //END RH
     }
+
   }
   // END AJ
 }

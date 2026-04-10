@@ -6,6 +6,32 @@
 #include <MS5611.h>
 #include <FS.h>
 
+// ===== IMPORT GLOBAL VARIABLES FROM main.cpp / globals.h =====
+
+// Sensor objects
+extern Adafruit_LSM6DSO32 dso32;
+extern MS5611 baro;
+
+// Shared sensor event structs
+extern sensors_event_t accel;
+extern sensors_event_t gyro;
+extern sensors_event_t temp2;
+
+// Shared data structs
+extern IMUdata currentIMU;
+extern BAROdata currentBARO;
+extern EVENTdata currentEVENT;
+
+// Staging + burnout globals
+extern bool staged;
+extern bool burnout;
+extern bool launch;
+
+extern float stagingTime;
+extern float burnoutTime;
+extern float launchTime;
+
+
 //RH BEGIN
 extern bool firstApogeeSample;
 extern bool apogeeDetected;

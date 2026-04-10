@@ -46,10 +46,9 @@ sensors_event_t temp2;
 #define ig3 2
 #define cont3 1
 
-// Define files for datalogging ------------------------------------------------------------------
-#define IMU_FILE "/IMU.csv" // File for saving IMU data, at a higher rate than baro data
-#define BARO_FILE "/BARO.csv" // File for saving barometer data
-#define EVENT_FILE "/EVENT.csv" // File for event log
+//CSV logging
+#define DATA_FILE "/data.csv"
+
 
 // Define data rates for sensors
 #define IMU_RATE 500
@@ -83,7 +82,7 @@ float microsPerRead = 1000000.0/rate; // Calculated the number of mircoseconds p
 
 
 void setup(void) {
-  Serial.begin(9600);
+  //Serial.begin(9600);
   delay(100); // will pause Zero, Leonardo, etc until serial console opens
   firstApogeeSample = true; 
   //RH 4/8/26
@@ -131,12 +130,6 @@ void setup(void) {
 
   digitalWrite(LED_BUILTIN,LOW); // Turns built-in LED off after startup 
 
-    // Start file system ------------------------------------------------------------------
-  if (!LittleFS.begin(true)) {
-        Serial.println("LittleFS mount failed!");
-        while (1);
-    }
-
 // Update angular position to starting tilt ------------------------------------------------------------------
   delay(1000); // Delay to measure angle at startup
   gravity_cal(dso32); // Function uses gravity vector to determine starting angle on pad
@@ -151,10 +144,13 @@ void setup(void) {
   // Set value for print delay
   print_delay = millis();
 
-  File file = LittleFS.open("/data.csv", "w");
-    file.println("time,temp,pressure");
-    file.println("0,25.0,1013.25");
-    file.println("1,25.1,1013.20");
+  //RH - 04/09/26 - added back WIFI server download for CSV
+    File file = LittleFS.open(DATA_FILE, "w");
+    file.println("t,temp,pressure,ax,ay,az,wx,wy,wz,alt,relAlt,event,eventTime");
+
+    file.println("0,25.0,1013.25,0,0,0,0,0,0,0,0,TEST,0");
+    file.println("1,25.1,1013.20,0,0,0,0,0,0,0,0,TEST,0");
+
     file.close();
 }
 
@@ -186,7 +182,6 @@ void loop() {
   // BEGIN AJ - 04/07/2026
   checkStaging(baro, dso32);
   //BEGIN RH - 04/09/2206
-  delay(50);
   checkApogee(dso32, baro);
   //END RH
   //delay(20);
