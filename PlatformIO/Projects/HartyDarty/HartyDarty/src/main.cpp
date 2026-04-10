@@ -16,6 +16,7 @@ Documentation block
 #include <Adafruit_LSM6DSO32.h>
 #include <MS5611.h>
 #include <test_functions.h>
+#include <localFunctions.h>
 #include <globals.h> // Header file for the global variables 
 #include <orientation.h> 
 #include <MadgwickAHRS.h>
@@ -83,6 +84,8 @@ float microsPerRead = 1000000.0/rate; // Calculated the number of mircoseconds p
 void setup(void) {
   Serial.begin(9600);
   delay(100); // will pause Zero, Leonardo, etc until serial console opens
+  firstApogeeSample = true; 
+  //RH 4/8/26
 
   sensor_init(dso32,baro); 
   // Setup PinModes for continuity testing
@@ -161,7 +164,12 @@ void loop() {
 
   // BEGIN AJ - 04/07/2026
   checkStaging(baro, dso32);
-  delay(20);
+    //BEGIN RH - 04/09/2206
+    checkApogee(dso32, baro);
+    //END RH
+    delay(20);
   // END AJ
+
+  
   
 }
