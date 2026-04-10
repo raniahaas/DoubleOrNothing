@@ -20,6 +20,7 @@ Documentation block
 #include <globals.h> // Header file for the global variables 
 #include <orientation.h> 
 #include <MadgwickAHRS.h>
+#include <wifiSetup.h>
 #include <LittleFS.h> // File system library
 #include <FreeRTOS.h> // Multithreading library
 #include <task.h> // Library for defining tasks that can be pinned to threads
@@ -87,6 +88,18 @@ void setup(void) {
   firstApogeeSample = true; 
   //RH 4/8/26
 
+  //BEGIN RH - 04/09/2026 - Added WIFI server
+  Serial.begin(115200);
+  delay(1000);
+
+  if (!LittleFS.begin()) {
+    Serial.println("LittleFS mount failed!");
+  }
+
+  startWiFi();
+
+  //END RH
+
   sensor_init(dso32,baro); 
   // Setup PinModes for continuity testing
   // Setting pins low for continuity testing, setting high opens MOSFETs
@@ -137,11 +150,19 @@ void setup(void) {
   currentIMU.timestamp_us = micros();
   // Set value for print delay
   print_delay = millis();
+
+  File file = LittleFS.open("/data.csv", "w");
+    file.println("time,temp,pressure");
+    file.println("0,25.0,1013.25");
+    file.println("1,25.1,1013.20");
+    file.close();
 }
 
 void loop() {
   // IMU Update test
   IMU_update(dso32,currentIMU.timestamp_us);
+  handleWiFiServer();
+
 
   if (pos_ind >= 20){
     Serial.print("x:");
