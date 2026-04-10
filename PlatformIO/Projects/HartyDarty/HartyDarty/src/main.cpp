@@ -8,6 +8,8 @@ Documentation block
 03/21/26 - LT - Added function to test IMU wihout use of serial monitor by activating pyro ports depending on board orientation
 03/21/26 - LT - Added function to ignite pyro channels via the serial monitor, currently only supports a single port at a time and doesn't test for continuity
 04/08/26 - LT - Created new branch to test out datalogging and multithreading
+04/09/26 - LT - Created new system of globally declared structures to store the current sensor readings for other function to access w/o actually pulling sensors
+04/09/26 - LT - Added function to update global structures for IMU and barometer data, IMU function also keeps track of angular position and tilt automatically! 
 
 
 **/
