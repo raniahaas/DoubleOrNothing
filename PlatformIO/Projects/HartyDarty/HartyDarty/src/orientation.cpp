@@ -117,7 +117,7 @@ void vector_disp (Adafruit_LSM6DSO32& IMU, unsigned long mode = 1){
 
 // Calibrate Gravity - Calibrates the global variables for angle by using a gravity vector
 // Note: This function will not work during flight, it only works while stationary on the ground, like when sitting on the pad
-oid gravity_cal(Adafruit_LSM6DSO32& IMU, int mode = 0){
+void gravity_cal(Adafruit_LSM6DSO32& IMU, int mode = 0){
     // Get IMU data
     sensors_event_t accel;
     sensors_event_t gyro;

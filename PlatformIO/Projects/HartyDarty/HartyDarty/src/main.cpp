@@ -7,6 +7,8 @@ Documentation block
 03/16/26 - LT - Re-added standalone barometer read function to test I2C functionality with PCB, created a function to exclusively read the barometer and not the IMU for this testing
 03/21/26 - LT - Added function to test IMU wihout use of serial monitor by activating pyro ports depending on board orientation
 03/21/26 - LT - Added function to ignite pyro channels via the serial monitor, currently only supports a single port at a time and doesn't test for continuity
+04/07/26 - AJ - Changed a bunch of functions and fixed a header error.
+04/08/26 - RH - Changes to launch detection
 04/08/26 - LT - Created new branch to test out datalogging and multithreading
 
 **/
@@ -28,7 +30,7 @@ Documentation block
 Adafruit_LSM6DSO32 dso32;
 
 // Set I2C adress for barometer - Ignore any error here relating to "not a class name" or "not a name type"
-MS5611 MS5611(0x77);
+MS5611 baro(0x77);
 sensors_event_t accel;
 sensors_event_t gyro;
 sensors_event_t temp2;
@@ -82,9 +84,7 @@ void setup(void) {
   Serial.begin(9600);
   delay(100); // will pause Zero, Leonardo, etc until serial console opens
 
-  // All sensor initializations offloaded to below function
-  sensor_init(dso32,MS5611); // Commented out for testing w/ initial PCB that doesn't have sensors
-
+  sensor_init(dso32,baro); 
   // Setup PinModes for continuity testing
   // Setting pins low for continuity testing, setting high opens MOSFETs
 
@@ -158,5 +158,10 @@ void loop() {
   } else{
     pos_ind += 1; // Incriments if not high enough
   }
+
+  // BEGIN AJ - 04/07/2026
+  checkStaging(baro, dso32);
+  delay(20);
+  // END AJ
   
 }
