@@ -93,6 +93,9 @@ IMUdata currentIMU;
 BAROdata currentBARO;
 EVENTdata currentEVENT;
 
+long prevIMUTime = 0;
+long prevBAROTime = 0;
+
 // Calculate time per read for each sensor (in microseconds) ------------------------------------------------------------------
 float IMUmicrosPerRead = 1000000.0/IMU_RATE; // Microseconds per IMU read
 float BAROmicrosPerRead = 1000000.0/BARO_RATE; // Microseconds per barometer read
@@ -241,6 +244,10 @@ void setup(void) {
   // Setup PinModes for continuity testing
   // Setting pins low for continuity testing, setting high opens MOSFETs
 
+  // Initial timestamps
+  prevIMUTime = micros();
+  prevBAROTime = micros();
+
   // Mostfet 1
   // Note: Set to Apogee on PCB
   analogSetPinAttenuation(cont1,ADC_11db);
@@ -293,6 +300,9 @@ void setup(void) {
   // Set value for print delay
   print_delay = millis();
 
+  gravity_cal(dso32);   // orientation.cpp
+
+
   //RH - 04/09/26 - added back WIFI server download for CSV
     File file = LittleFS.open(BARO_FILE, "w");
     file.println("t,temp,pressure,ax,ay,az,wx,wy,wz,alt,relAlt,event,eventTime");
@@ -309,6 +319,13 @@ void loop() {
   BARO_update(baro,currentBARO.timestamp_us); // Call this function to update the barometer data
 
   handleWiFiServer();
+
+  // --- Orientation BARO update ---
+  BARO_update(baro, prevBAROTime);                // orientation.cpp
+
+  // --- Flight logic ---
+  checkStaging(baro, dso32);                      // localFunctions.cpp
+  checkApogee(dso32, baro);                       // localFunctions.cpp
 
 
   if (pos_ind >= 20){

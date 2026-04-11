@@ -2,7 +2,8 @@
 #include <Adafruit_LSM6DSO32.h>
 #include <MS5611.h>
 #include <LittleFS.h> 
-#include "FS.h"         
+#include "FS.h"
+#include <globals.h>         
 
 //declarations from main
 //RH - 4/7
@@ -32,20 +33,6 @@ void IMU_update(Adafruit_LSM6DSO32 &imu, unsigned long timestamp) {
     // currentBARO.alt = baro.getAltitude();
     // currentBARO.relAlt = currentBARO.alt - 226.2; // pad altitude
 
-    String row = String(timestamp) + "," +
-                 String(currentBARO.temp) + "," +
-                 String(currentBARO.pressure) + "," +
-                 String(accel.acceleration.x) + "," +
-                 String(accel.acceleration.y) + "," +
-                 String(accel.acceleration.z) + "," +
-                 String(gyro.gyro.x) + "," +
-                 String(gyro.gyro.y) + "," +
-                 String(gyro.gyro.z) + "," +
-                 String(currentBARO.alt) + "," +
-                 String(currentBARO.relAlt) + "," +
-                 "NONE,0";
-
-    logToCSV(row);
 }
 
 
@@ -68,8 +55,6 @@ void checkApogee(Adafruit_LSM6DSO32 &imu, MS5611 &baro) {
     imu.getEvent(&accel, &gyro, &temp2);
     baro.read();
     float altitude = baro.getAltitude();
-
-
     float pressure = baro.getPressure();
     float seaLevelAltitude = 44330.0 * (1.0 - pow(pressure / 1013.25, 0.1903));
     float pyrolog = seaLevelAltitude - 226.2;   //Convert to reative level; this is CI in metres
@@ -164,23 +149,13 @@ void checkApogee(Adafruit_LSM6DSO32 &imu, MS5611 &baro) {
         apogee_gx = gx;
         apogee_gy = gy;
         apogee_gz = gz;
-        apogee_gyroMag = gyroMag;
+        // apogee_gyroMag = gyroMag;
         apogee_alt_raw = altitude;
-        apogee_alt_rel = relAlt;
+        // apogee_alt_rel = relAlt;
 
-        File file = LittleFS.open("/data.csv", "a");
-        if (file) {
-            file.printf(",,,,,,,,,,,%s,%lu\n", "APOGEE", apogeeTime);
-            file.printf(",,,,,,,,,,gyroMag,%.5f\n", apogee_gyroMag);
-            file.printf(",,,,,,,,,,altRaw,%.5f\n", apogee_alt_raw);
-            file.printf(",,,,,,,,,,altRel,%.5f\n", apogee_alt_rel);
-            file.close();
-        }
-
-        Serial.println("Apogee logged to CSV");
     }
-        gyroPrev = gyroMag;
-        pyroPrev = relAlt;
+        // gyroPrev = gyroMag;
+        // pyroPrev = relAlt;
 
         apogeeDetected = true;
 
