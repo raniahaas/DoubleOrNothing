@@ -25,9 +25,6 @@ Documentation block
 #include <MadgwickAHRS.h>
 #include <wifiSetup.h>
 #include <LittleFS.h> // File system library
-#include <FreeRTOS.h> // Multithreading library
-#include <task.h> // Library for defining tasks that can be pinned to threads
-#include <queue.h> // Library for creating ques that send data between cores
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "freertos/queue.h"
@@ -67,6 +64,9 @@ sensors_event_t temp2;
 #define IMU_RATE 500
 #define BARO_RATE 100
 
+// Define launch parameters
+#define LAUNCH_ACCEL 4 // The amount of G that detects launch
+
 // Define queus for each datalogging function
 static QueueHandle_t imuQueue; 
 static QueueHandle_t baroQueue;
@@ -87,6 +87,13 @@ float ang_x = 0;
 float ang_y = 0;
 float ang_z = 0;
 float tilt = 0;
+
+// Define datalogging parameters 
+bool launched = false;
+bool stage = false;
+int max_datalog = 30; // Max time for datalogging in seconds
+unsigned long launch_us; // Launch time in us
+volatile bool loggingActive = false; // 
 
 // Define global variables for current sensor readings - ONLY DONE IN THIS FILE!
 IMUdata currentIMU;
@@ -111,116 +118,127 @@ long print_delay;
 unsigned long rate = 500;
 float microsPerRead = 1000000.0/rate; // Calculated the number of mircoseconds per reading of the IMU
 
-// Datalogging Functions: Keep all file system declarations in these files unless the datalogging system has been turned off! ------------------------------------------------------------------
-void imuWriterTask(void* pvParameters){ // Writes IMU data to the IMU file
-  imuFile = LittleFS.open(IMU_FILE, "a"); // Opens the file for IMU datalogging
-  if (!imuFile){
-    vTaskDelete(NULL); // If the file is not open, the task deletes itself by calling this function within itself w/ input of NULL
-    return;
-  }
 
-  if (imuFile.size() == 0){ // If the file is empty (just created), add the headers for each column
-    imuFile.println("timestamp_us,gyro_x,gyro_y,gyro_z,accel_x,accel_y,accel_z");
-  }
-
-  IMUdata row; // Creates local structure for imported IMU data structure
-  uint32_t count = 0; // Counter variable for flushing data, start at zero
-  char buffer[128]; // Creates buffer for text that will be written to file
-
-  while(1) { //  Infinite loop
-    if (xQueueReceive(imuQueue, &row, portMAX_DELAY)){ // If a new value comes into the queue, do the below actions
-      int len = snprintf(buffer,sizeof(buffer),"%lld,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f\n",row.timestamp_us,row.gx,row.gy,row.gz,row.ax,row.ay,row.az); // Preps file for write
-
-      imuFile.write((uint8_t*)buffer,len); // Writes IMU data to file
-      if (++count % 50 == 0) imuFile.flush(); // Flushes the file to memory every 50 times a datapoint is logged
-
+// ─── Each writer task cleans up after itself ───────────────────────────────────
+void imuWriterTask(void* pvParameters) {
+    imuFile = LittleFS.open(IMU_FILE, "a");
+    if (!imuFile) {
+        imuWriterHandle = NULL;
+        vTaskDelete(NULL);
+        return;
     }
-  }
-}
 
-void baroWriterTask(void* pvParameters){ // Writes barometer data to the barometer file
-  baroFile = LittleFS.open(BARO_FILE, "a");
-  if (!baroFile){
-    vTaskDelete(NULL);
-    return;
-  }
+    if (imuFile.size() == 0)
+        imuFile.println("timestamp_us,gyro_x,gyro_y,gyro_z,accel_x,accel_y,accel_z");
 
-  if (baroFile.size() == 0){
-    baroFile.println("timestamp_us,pressure_mpa,temp_c,altitude_ft");
-  }
+    IMUdata row;
+    uint32_t count = 0;
+    char buffer[128];
 
-  BAROdata row;
-  uint32_t count = 0;
-  char buffer[96];
-
-  while(1){
-    if (xQueueReceive(baroQueue, &row, portMAX_DELAY)){
-      int len = snprintf(buffer,sizeof(buffer),"%lld,%.2f,%.2f,%.2f\n",row.timestamp_us,row.pressure,row.temp,row.altitude);
-
-      baroFile.write((uint8_t*)buffer,len);
-      if (++count % 20 == 0) baroFile.flush();
+    while (loggingActive) {
+        if (xQueueReceive(imuQueue, &row, pdMS_TO_TICKS(5)) == pdTRUE) {
+            int len = snprintf(buffer, sizeof(buffer),
+                "%lld,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f\n",
+                row.timestamp_us,
+                row.gx, row.gy, row.gz,
+                row.ax, row.ay, row.az);
+            imuFile.write((uint8_t*)buffer, len);
+            if (++count % 50 == 0) imuFile.flush();
+        }
     }
-  }
-}
 
-void eventWriterTask(void* pvParameters){ // Writes events to the event file
-  eventFile = LittleFS.open(EVENT_FILE, "a");
-  if (!eventFile){
-    vTaskDelete(NULL);
-    return;
-  }
-
-  if (eventFile.size() == 0){
-    eventFile.println("timestamp_us,event");
-  }
-
-  EVENTdata row;
-  char buffer[96];
-
-  while(1){
-    if (xQueueReceive(eventQueue, &row, portMAX_DELAY)){
-      int len = snprintf(buffer, sizeof(buffer),"%lld,%s\n",row.timestamp_us,row.event);
-
-      eventFile.write((uint8_t*)buffer,len);
-      eventFile.flush();
-    }
-  }
-}
-
-void stopLogging(){ // This function kills all the writer tasks and closes the files, allows safe file access from main loop once called
-  // Delete the tasks so no file is mid write when being closed
-  if (imuWriterHandle){
-    vTaskDelete(imuWriterHandle); // Deletes imuWriter task
-    imuWriterHandle = NULL;
-  }
-  if (baroWriterHandle){
-    vTaskDelete(baroWriterHandle); // Deletes imuWriter task
-    baroWriterHandle = NULL;
-  }
-  if (eventWriterHandle){
-    vTaskDelete(eventWriterHandle); // Deletes imuWriter task
-    eventWriterHandle = NULL;
-  }
-
-  // Flush & close files
-  if (imuFile){
+    // Task closes its own file then deletes itself
     imuFile.flush();
     imuFile.close();
-  }
-  if (baroFile){
+    imuWriterHandle = NULL;
+    vTaskDelete(NULL);
+}
+
+// ─── Same pattern for baro and event tasks ────────────────────────────────────
+void baroWriterTask(void* pvParameters) {
+    baroFile = LittleFS.open(BARO_FILE, "a");
+    if (!baroFile) {
+        baroWriterHandle = NULL;
+        vTaskDelete(NULL);
+        return;
+    }
+
+    if (baroFile.size() == 0)
+        baroFile.println("timestamp_us,pressure_hpa,temp_c,altitude_m");
+
+    BAROdata row;
+    uint32_t count = 0;
+    char buffer[96];
+
+    while (loggingActive) {
+        if (xQueueReceive(baroQueue, &row, pdMS_TO_TICKS(5)) == pdTRUE) {
+            int len = snprintf(buffer, sizeof(buffer),
+                "%lld,%.2f,%.2f,%.2f\n",
+                row.timestamp_us,
+                row.pressure, row.temp, row.altitude);
+            baroFile.write((uint8_t*)buffer, len);
+            if (++count % 20 == 0) baroFile.flush();
+        }
+    }
+
     baroFile.flush();
     baroFile.close();
-  }
-  if (eventFile){ // ENSURE YOU LOG THE EVENT THE STOPS DATALOGGING BEFORE YOU USE THIS FUNCITON!
+    baroWriterHandle = NULL;
+    vTaskDelete(NULL);
+}
+
+void eventWriterTask(void* pvParameters) {
+    eventFile = LittleFS.open(EVENT_FILE, "a");
+    if (!eventFile) {
+        eventWriterHandle = NULL;
+        vTaskDelete(NULL);
+        return;
+    }
+
+    if (eventFile.size() == 0)
+        eventFile.println("timestamp_us,event");
+
+    EVENTdata row;
+    char buffer[96];
+
+    while (loggingActive) {
+        if (xQueueReceive(eventQueue, &row, pdMS_TO_TICKS(5)) == pdTRUE) {
+            int len = snprintf(buffer, sizeof(buffer),
+                "%lld,%s\n",
+                row.timestamp_us, row.event);
+            eventFile.write((uint8_t*)buffer, len);
+            eventFile.flush();
+        }
+    }
+
     eventFile.flush();
     eventFile.close();
-  }
+    eventWriterHandle = NULL;
+    vTaskDelete(NULL);
+}
 
-  // NOTE: Add a state variable for the main code that determines of file writing in the main loop is safe or not
-  // That variable would be changed here to now allow for file writing in the main loop now that the tasks are closed
+void startLogging() {
+    loggingActive = true;   // MUST be set before tasks are created
 
-  // Report to serial that task finished
-  Serial.println("Datalogging tasks stopped, all files closed");
+    imuQueue   = xQueueCreate(IMU_QUEUE_LENGTH,   sizeof(IMUdata));
+    baroQueue  = xQueueCreate(BARO_QUEUE_LENGTH,  sizeof(BAROdata));
+    eventQueue = xQueueCreate(EVENT_QUEUE_LENGTH,  sizeof(EVENTdata));
+
+    xTaskCreatePinnedToCore(imuWriterTask,   "IMUWriter",   8192, NULL, 2, &imuWriterHandle,   WRITE_CORE);
+    xTaskCreatePinnedToCore(baroWriterTask,  "BaroWriter",  8192, NULL, 2, &baroWriterHandle,  WRITE_CORE);
+    xTaskCreatePinnedToCore(eventWriterTask, "EventWriter", 8192, NULL, 2, &eventWriterHandle, WRITE_CORE);
+}
+
+// ─── stopLogging just clears the flag and waits for tasks to finish ───────────
+void stopLogging() {
+    loggingActive = false;
+
+    // Wait for all tasks to self-terminate cleanly
+    while (imuWriterHandle != NULL || baroWriterHandle != NULL || eventWriterHandle != NULL) {
+        vTaskDelay(pdMS_TO_TICKS(10));
+    }
+
+    Serial.println("Datalogging stopped, all files closed.");
 }
 
 void setup(void) {
@@ -280,11 +298,6 @@ void setup(void) {
   baroQueue  = xQueueCreate(BARO_QUEUE_LENGTH,  sizeof(BAROdata));
   eventQueue = xQueueCreate(EVENT_QUEUE_LENGTH,  sizeof(EVENTdata));
 
-  // Writer tasks — all on Core 0
-  xTaskCreatePinnedToCore(imuWriterTask,   "IMUWriter",   8192, NULL, 2, &imuWriterHandle,   WRITE_CORE); // If core dumping, make the value after "IMUWriter" higher
-  xTaskCreatePinnedToCore(baroWriterTask,  "BaroWriter",  8192, NULL, 2, &baroWriterHandle,  WRITE_CORE);
-  xTaskCreatePinnedToCore(eventWriterTask, "EventWriter", 8192, NULL, 2, &eventWriterHandle, WRITE_CORE);
-
   // Update angular position to starting tilt ------------------------------------------------------------------
   delay(1000); // Delay to measure angle at startup
   gravity_cal(dso32); // Function uses gravity vector to determine starting angle on pad
@@ -302,7 +315,6 @@ void setup(void) {
 
   gravity_cal(dso32);   // orientation.cpp
 
-
   //RH - 04/09/26 - added back WIFI server download for CSV
     File file = LittleFS.open(BARO_FILE, "w");
     file.println("t,temp,pressure,ax,ay,az,wx,wy,wz,alt,relAlt,event,eventTime");
@@ -314,47 +326,25 @@ void setup(void) {
 }
 
 void loop() {
-  // IMU Update test
-  IMU_update(dso32,currentIMU.timestamp_us);
-  BARO_update(baro,currentBARO.timestamp_us); // Call this function to update the barometer data
+    IMU_update(dso32, currentIMU.timestamp_us);
+    BARO_update(baro, currentBARO.timestamp_us);
 
-  handleWiFiServer();
+    handleWiFiServer();
 
-  // --- Orientation BARO update ---
-  BARO_update(baro, prevBAROTime);                // orientation.cpp
+    if (!launched && currentIMU.az >= (LAUNCH_ACCEL * 9.8f)) {
+        launched = true;
+        launch_us = micros();
+        startLogging();   // creates tasks and sets flag atomically
+        Serial.println("Launch detected, logging started.");
+    }
 
-  // --- Flight logic ---
-  checkStaging(baro, dso32);                      // localFunctions.cpp
-  checkApogee(dso32, baro);                       // localFunctions.cpp
-
-
-  if (pos_ind >= 20){
-    Serial.print("x:");
-    Serial.print(currentIMU.ax);
-    Serial.print(" y:");
-    Serial.print(currentIMU.ay);
-    Serial.print(" z:");
-    Serial.println(currentIMU.az);
-
-    Serial.print("posX:");
-    Serial.print(ang_x);
-    Serial.print(" posY:");
-    Serial.print(ang_y);
-    Serial.print(" tilt:");
-    Serial.println(tilt);
-    pos_ind = 0;
-  } else{
-    pos_ind += 1; // Incriments if not high enough
-  }
-
-  // BEGIN AJ - 04/07/2026
-  checkStaging(baro, dso32);
-  //BEGIN RH - 04/09/2206
-  checkApogee(dso32, baro);
-  //END RH
-  //delay(20);
-  // END AJ
-
-  
-  
+    if (launched && (micros() - launch_us) < ((unsigned long)max_datalog * 1000000UL)) {
+        xQueueSend(imuQueue,  &currentIMU,  0);
+        xQueueSend(baroQueue, &currentBARO, 0);
+    } else if (launched && (micros() - launch_us) >= ((unsigned long)max_datalog * 1000000UL)) {
+        if (loggingActive) {   // guard so stopLogging only called once
+            stopLogging();
+            Serial.println("Logging complete.");
+        }
+    }
 }
