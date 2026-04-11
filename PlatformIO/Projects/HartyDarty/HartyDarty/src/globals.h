@@ -1,34 +1,54 @@
 #ifndef GLOBALS_H
 #define GLOBALS_H
 
-// Declare global variables for angular position
-extern float ang_x; 
+#include <freertos/FreeRTOS.h>
+#include <freertos/queue.h>
+
+// ── Angular position globals ──────────────────────────────────────────────────
+extern float ang_x;
 extern float ang_y;
 extern float ang_z;
-extern float tilt; // Variable for describing the total tilt from the positive z axis for angle lockout
+extern float tilt;
 
-// Define data structures for datalogging ------------------------------------------------------------------
-typedef struct{ // Structure for IMU data that will be sent to datalogging file
-  unsigned long timestamp_us; // Timestamp in microseconds, will last up to 72 minutes before rolling over!
-  float gx, gy, gz; // Floats containing gyro values (deg/s)
-  float ax, ay, az; // Floats containing accelerometer values (m/s^2)
+// ── Data structures ───────────────────────────────────────────────────────────
+typedef struct {
+    int64_t timestamp_us;           // Microsecond timestamp (lasts ~292,000 years)
+    float gx, gy, gz;               // Gyro (rad/s)
+    float ax, ay, az;               // Accelerometer (m/s^2)
+    float ang_x, ang_y, ang_z;      // Integrated angular position (degrees)
+    float tilt;                     // Total tilt from vertical (degrees)
 } IMUdata;
 
-typedef struct{
-  unsigned long timestamp_us; // Timestamp in microseconds
-  float pressure; // Float containing pressure (in mbar)
-  float temp; // Float containing temperature (in C)
-  float altitude; // Float containing calculated altitude (in ft)
+typedef struct {
+    int64_t timestamp_us;
+    float pressure;                 // mBar
+    float temp;                     // Degrees C
+    float altitude;                 // Feet
 } BAROdata;
 
-typedef struct{
-  unsigned long timestamp_us; // Timestamp in microseconds
-  char event[64]; // Actual event 
-} EVENTdata; 
+typedef struct {
+    int64_t timestamp_us;
+    char event[64];
+} EVENTdata;
 
-// Declare global variables based on above structures
-extern IMUdata currentIMU;
-extern BAROdata currentBARO;
+// ── Current sensor readings ───────────────────────────────────────────────────
+extern IMUdata   currentIMU;
+extern BAROdata  currentBARO;
 extern EVENTdata currentEVENT;
+
+// ── Queues (defined in main.cpp) ──────────────────────────────────────────────
+extern QueueHandle_t imuQueue;
+extern QueueHandle_t baroQueue;
+extern QueueHandle_t eventQueue;
+
+// ── Flight state flags ────────────────────────────────────────────────────────
+extern bool  apogeeDetected;
+extern bool  firstApogeeSample;
+extern float gyroPrev;
+extern float pyroPrev;
+extern float apogee_gx, apogee_gy, apogee_gz;
+extern float apogee_gyroMag;
+extern float apogee_alt_raw;
+extern float apogee_alt_rel;
 
 #endif

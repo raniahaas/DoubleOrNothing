@@ -144,56 +144,39 @@ void gravity_cal(Adafruit_LSM6DSO32& IMU, int mode = 0){
 
 // IMU Update Function - Updates global variables for IMU read while also updating global position and tilt via integration
 //
-void IMU_update(Adafruit_LSM6DSO32& IMU, unsigned long prev_time, int rate=300){
-    float diff = (1.0/rate)*(1000000); // Time between cycles in us
+void IMU_update(Adafruit_LSM6DSO32& IMU, unsigned long prev_time, int rate) {
+    float diff = (1.0 / rate) * 1000000;
+    if ((micros() - prev_time) < diff) return;
 
-    if ((micros() - prev_time) >= diff){ // If enough time has passed for a new sample to be taken, take the sample
-        // Get new data from sensors
-        sensors_event_t accel;
-        sensors_event_t gyro;
-        sensors_event_t temp;
-        IMU.getEvent(&accel, &gyro, &temp);
+    sensors_event_t accel, gyro, temp;
+    IMU.getEvent(&accel, &gyro, &temp);
 
-        // Save IMU readings
-        // Gyro readings are in rad/s
-        currentIMU.gx = gyro.gyro.x;
-        currentIMU.gy = gyro.gyro.y;
-        currentIMU.gz = gyro.gyro.z;
-        // Accel readings are in m/s^2
-        currentIMU.ax = accel.acceleration.x;
-        currentIMU.ay = accel.acceleration.y;
-        currentIMU.az = accel.acceleration.z;
+    currentIMU.gx = gyro.gyro.x;
+    currentIMU.gy = gyro.gyro.y;
+    currentIMU.gz = gyro.gyro.z;
+    currentIMU.ax = accel.acceleration.x;
+    currentIMU.ay = accel.acceleration.y;
+    currentIMU.az = accel.acceleration.z;
+    currentIMU.timestamp_us = micros();
 
-        // Save timestamp
-        currentIMU.timestamp_us = micros();
+    float dt = (currentIMU.timestamp_us - prev_time) / 1000000.0;
+    ang_x += (currentIMU.gx * dt) * (180.0 / PI);
+    ang_y += (currentIMU.gy * dt) * (180.0 / PI);
+    ang_z += (currentIMU.gz * dt) * (180.0 / PI);
+    tilt = acos(cos(ang_x * (PI / 180.0)) * cos(ang_y * (PI / 180.0))) * (180.0 / PI);
 
-        // Calculate change in time between last read (delta t)
-        float dt = (currentIMU.timestamp_us - prev_time) / 1000000.0; // Divide by 1 million to convert into seconds
-
-        // Update global position variables - Convert to degrees from radians
-        ang_x += (currentIMU.gx*dt)*(180.0/PI);
-        ang_y += (currentIMU.gy*dt)*(180.0/PI);
-        ang_z += (currentIMU.gz*dt)*(180.0/PI);
-
-        // Update global tilt variable
-        tilt = acos(cos(ang_x*(PI/180.0))*cos(ang_y*(PI/180.0)))*(180.0/PI); // Don't still fully understand why this works, has something to do with rotation matrixes, but it seems to be accurate
-    }
+    // ── NO queue push here anymore ──
 }
-// Baro Update Function - Updates global variables for barometer
-//
-void BARO_update(MS5611& BARO, unsigned long prev_time, int rate = 100){
-    float diff = (1.0/rate)*(1000000); // Time between cycles in us
 
-    if ((micros() - prev_time) >= diff){ // If enough time has passed for a new sample to be taken, take the sample
-        // Get data from barometer
-        BARO.read(); // This actually pulls the data
-        // Assign baro values to global structure
-        currentBARO.pressure = BARO.getPressure(); // mBar
-        currentBARO.temp = BARO.getTemperature(); // Degrees C
-        currentBARO.altitude = BARO.getAltitudeFeet(); // ft
+void BARO_update(MS5611& BARO, unsigned long prev_time, int rate) {
+    float diff = (1.0 / rate) * 1000000;
+    if ((micros() - prev_time) < diff) return;
 
-        // Save timestamp
-        currentBARO.timestamp_us = micros();
-    }
+    BARO.read();
+    currentBARO.pressure  = BARO.getPressure();
+    currentBARO.temp      = BARO.getTemperature();
+    currentBARO.altitude  = BARO.getAltitudeFeet();
+    currentBARO.timestamp_us = micros();
 
+    // ── NO queue push here anymore ──
 }

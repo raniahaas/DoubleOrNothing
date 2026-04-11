@@ -1,8 +1,16 @@
 #ifndef ORIENTATION_H
 #define ORIENTATION_H
+#define IMU_FILE   "/IMU.csv"
+#define BARO_FILE  "/BARO.csv"
+#define EVENT_FILE "/EVENT.csv"
 
 #include <Arduino.h>
 #include <MadgwickAHRS.h>
+
+extern QueueHandle_t imuQueue;
+extern QueueHandle_t baroQueue;
+extern QueueHandle_t eventQueue;
+
 
 long simple_position(Adafruit_LSM6DSO32& IMU, long prev_time, unsigned long debug = 0);
 long madgwick_position(Adafruit_LSM6DSO32& IMU, Madgwick& filter, long prevMicros, unsigned long rate = 500, unsigned long debug = 0);

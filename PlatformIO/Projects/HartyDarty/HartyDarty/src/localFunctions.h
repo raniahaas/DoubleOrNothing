@@ -6,8 +6,6 @@
 #include <MS5611.h>
 #include <FS.h>
 
-// ===== IMPORT GLOBAL VARIABLES FROM main.cpp / globals.h =====
-
 // Sensor objects
 extern Adafruit_LSM6DSO32 dso32;
 extern MS5611 baro;
@@ -56,7 +54,13 @@ extern float prevAccel;
 extern float launchTime;
 //AJ END
 
-void checkApogee(Adafruit_LSM6DSO32 &imu, MS5611 &baro); //RH
-void checkStaging(MS5611 &baro, Adafruit_LSM6DSO32 &dso32); // AJ
+
+// ── Logging ──────────────────────────────────────────────────────────────────
+void logToCSV(const String &row);
+
+// ── Flight event detection ────────────────────────────────────────────────────
+void checkApogee(Adafruit_LSM6DSO32 &imu, MS5611 &baro);
+void checkStaging(MS5611 &baro, Adafruit_LSM6DSO32 &dso32);
 
 #endif
+
