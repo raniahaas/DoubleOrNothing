@@ -22,9 +22,9 @@ Documentation block
 #include <orientation.h> 
 #include <MadgwickAHRS.h>
 #include <LittleFS.h> // File system library
-#include <FreeRTOS.h> // Multithreading library
-#include <task.h> // Library for defining tasks that can be pinned to threads
-#include <queue.h> // Library for creating ques that send data between cores
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "freertos/queue.h"
 
 // Check that all components are up and running ------------------------------------------------------------------
 // Init IMU
@@ -250,9 +250,19 @@ void setup(void) {
 
   // Start file system ------------------------------------------------------------------
   if (!LittleFS.begin(true)) {
-        Serial.println("LittleFS mount failed!");
-        while (1);
-    }
+    Serial.println("LittleFS mount failed!");
+    while (1);
+  }
+
+  // Create queues ------------------------------------------------------------------
+  imuQueue = xQueueCreate(IMU_QUEUE_LENGTH, sizeof(IMUdata));
+  baroQueue  = xQueueCreate(BARO_QUEUE_LENGTH,  sizeof(BAROdata));
+  eventQueue = xQueueCreate(EVENT_QUEUE_LENGTH,  sizeof(EVENTdata));
+
+  // Writer tasks — all on Core 0
+  xTaskCreatePinnedToCore(imuWriterTask,   "IMUWriter",   8192, NULL, 2, &imuWriterHandle,   WRITE_CORE); // If core dumping, make the value after "IMUWriter" higher
+  xTaskCreatePinnedToCore(baroWriterTask,  "BaroWriter",  8192, NULL, 2, &baroWriterHandle,  WRITE_CORE);
+  xTaskCreatePinnedToCore(eventWriterTask, "EventWriter", 8192, NULL, 2, &eventWriterHandle, WRITE_CORE);
 
   // Update angular position to starting tilt ------------------------------------------------------------------
   delay(1000); // Delay to measure angle at startup
@@ -301,5 +311,4 @@ void loop() {
   } else{
     pos_ind += 1; // Incriments if not high enough
   }
-
 }
