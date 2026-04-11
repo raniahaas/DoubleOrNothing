@@ -175,3 +175,21 @@ void IMU_update(Adafruit_LSM6DSO32& IMU, long prev_time){
     // Update global tilt variable
     tilt = acos(cos(ang_x*(PI/180.0))*cos(ang_y*(PI/180.0)))*(180.0/PI); // Don't still fully understand why this works, has something to do with rotation matrixes, but it seems to be accurate
 }
+// Baro Update Function - Updates global variables for barometer
+//
+void BARO_update(MS5611& BARO, unsigned long prev_time, int rate = 100){
+    float diff = (1.0/rate)*(1000000); // Time between cycles in us
+
+    if ((micros() - prev_time) >= diff){ // If enough time has passed for a new sample to be taken, take the sample
+        // Get data from barometer
+        BARO.read(); // This actually pulls the data
+        // Assign baro values to global structure
+        currentBARO.pressure = BARO.getPressure(); // mBar
+        currentBARO.temp = BARO.getTemperature(); // Degrees C
+        currentBARO.altitude = BARO.getAltitudeFeet(); // ft
+
+        // Save timestamp
+        currentBARO.timestamp_us = micros();
+    }
+
+}

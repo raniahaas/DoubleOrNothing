@@ -27,10 +27,10 @@ void IMU_update(Adafruit_LSM6DSO32 &imu, unsigned long timestamp) {
     imu.getEvent(&accel, &gyro, &temp2);
 
     // Update BARO values here so IMU rows contain real data
-    currentBARO.temp = baro.getTemperature();
-    currentBARO.pressure = baro.getPressure();
-    currentBARO.alt = baro.getAltitude();
-    currentBARO.relAlt = currentBARO.alt - 226.2; // pad altitude
+    // currentBARO.temp = baro.getTemperature();
+    // currentBARO.pressure = baro.getPressure();
+    // currentBARO.alt = baro.getAltitude();
+    // currentBARO.relAlt = currentBARO.alt - 226.2; // pad altitude
 
     String row = String(timestamp) + "," +
                  String(currentBARO.temp) + "," +

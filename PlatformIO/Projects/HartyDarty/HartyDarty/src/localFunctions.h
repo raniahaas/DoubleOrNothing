@@ -17,10 +17,6 @@ extern sensors_event_t accel;
 extern sensors_event_t gyro;
 extern sensors_event_t temp2;
 
-// Shared data structs
-extern IMUdata currentIMU;
-extern BAROdata currentBARO;
-extern EVENTdata currentEVENT;
 
 // Staging + burnout globals
 extern bool staged;

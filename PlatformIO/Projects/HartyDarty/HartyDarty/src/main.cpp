@@ -294,7 +294,7 @@ void setup(void) {
   print_delay = millis();
 
   //RH - 04/09/26 - added back WIFI server download for CSV
-    File file = LittleFS.open(DATA_FILE, "w");
+    File file = LittleFS.open(BARO_FILE, "w");
     file.println("t,temp,pressure,ax,ay,az,wx,wy,wz,alt,relAlt,event,eventTime");
 
     file.println("0,25.0,1013.25,0,0,0,0,0,0,0,0,TEST,0");
@@ -306,7 +306,7 @@ void setup(void) {
 void loop() {
   // IMU Update test
   IMU_update(dso32,currentIMU.timestamp_us);
-  BARO_update(MS5611,currentBARO.timestamp_us); // Call this function to update the barometer data
+  BARO_update(baro,currentBARO.timestamp_us); // Call this function to update the barometer data
 
   handleWiFiServer();
 
