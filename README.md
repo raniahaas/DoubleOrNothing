@@ -1,5 +1,18 @@
 # TwoStageAvionicsBay
-University of Cincinnati's Rocketry Club Spring 2026 Project, nicknamed Double or Nothing. This is in succession to the previous semester's Boosted Dart, [Harty Darty](https://github.com/raniamaaraba/HardyDarty), for the club's overall goal of building skills for a space shot within the next decade. The project is a semester long project beginning January 2nd until April 12th, 2026. Repo is a current WIP, last edit: February 20th, 2026.
+University of Cincinnati's Rocketry Club Spring 2026 Project, nicknamed Double or Nothing. This is in succession to the previous semester's Boosted Dart, [Harty Darty](https://github.com/raniamaaraba/HardyDarty), for the club's overall goal of building skills for a space shot within the next decade. The project is a semester-long project beginning January 2nd until April 11th, 2026. 
+
+## Team Photo
+<img width="5712" height="4284" alt="image-20260411-210008-08cecf03" src="https://github.com/user-attachments/assets/d1f55dc1-a149-4b2b-9532-d0375eb42f58" />
+
+## Final Results
+Double or Nothing was a stellar success! With proper lighting of the second stage, both stagings being recovered, and several of our goals for the project being achieved, it was truly a great launch! There was approximately 2.2 seconds between the motor burnout of the first stage and the ignition of the second stage. Future notes for improvement: futher explore issues and probabilty of weather cocking as well as alternative methods of data retriveval and storage from the ESP32.
+
+| Stage | Apogee | Time to Apogee | Max Velocity | Motor Burnout | Tilt Angle| Parachute Descent Rate | Parachute Deploy Altitude|
+| ------------- | ------------- |
+| 1st stage | 3,539.71 ft | 14.4 seconds | 621.0 ft/s | 1.3s | 11.2º | 37.6 ft/s | 689/0 ft|
+| 2nd stage| 10,116.75 ft | 25.4 seconds | 1046.0 ft/s | 5.27s | 14.2º | 58 ft/s | 697.2 ft |
+
+
 
 # Goals
 | Team  | Achievement Desired |
@@ -30,7 +43,7 @@ Similar to HD, there is both a custom avionics bay and off-the-shelf components.
 | Blue Raven  | 2nd stage  | Also an additional flight computer, but for data in the second stage |
 | EasyMini Altimeter | 2nd stage | Dual redundant recovery system |
 | Grey Designs V1 GPS Tracker | 1st and 2nd| Real-time GPS data via data link |
-|
+
 
 | Custom Avionics | Use |
 | ------------- | ------------- |
